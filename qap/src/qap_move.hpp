@@ -17,10 +17,12 @@ public:
   template<typename T>
   friend class qap_neighborhood;
 
+  /// @brief A move that swaps from and to.
   qap_move(int from, int to) 
     : p1(std::min(from,to)), p2(std::max(from,to)) 
   { }
 
+  /// @brief Virtual method that applies the move on a point
   void
   apply(mets::feasible_solution& s)
   {
@@ -28,20 +30,28 @@ public:
     sol.swap(p1, p2);
   }
 
+  /// @brief Unapply the last move: in case of a swap the inverse move
+  /// is just the same swap.
   void
   unapply(mets::feasible_solution& s)
   {
     this->apply(s);
   }
 
+  /// @brief A method to clone self. Needed to insert the move in a
+  /// tabu list.
   mana_move* 
   clone() const 
   { return new qap_move(p1, p2); }
 
+  /// @brief An hash function used by the tabu list (the hash value is
+  /// used to insert the move in an hash set).
   size_t
   hash() const
   { return (p1)<<16^(p2); }
 
+  /// @brief Comparison operator used to tell if this move is equal to
+  /// a move in the tabu list.
   bool 
   operator==(const mets::mana_move& o) const
   {
