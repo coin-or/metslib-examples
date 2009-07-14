@@ -1,0 +1,16 @@
+SUBSET SUM TUTORIAL
+-------------------
+
+This is a simple tutorial to quickly get started using METSlib. 
+
+The sample problem that is solved in main-tut1.cc is the subset sum
+problem.
+
+A possible choice for the objective function is defined in
+tut_model.hh. The tut_moves.hh and tut_neighborhoods.hh define a
+possibile neighborhood.
+
+Please read the comments in the code and ask your questions on the
+mailing list.
+
+- Mirko Maischberger
