@@ -18,7 +18,7 @@
 
 #include <typeinfo>
 #include <metslib/mets.h>
-#include "tut_model.hh"
+#include "tut_model.h"
 
 /// @brief A move that sets 
 class toggle : public mets::mana_move {

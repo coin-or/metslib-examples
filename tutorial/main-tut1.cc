@@ -17,9 +17,9 @@
 
 #include <iostream>
 #include <metslib/mets.h>
-#include "tut_model.hh"
-#include "tut_moves.hh"
-#include "tut_neighborhoods.hh"
+#include "tut_model.h"
+#include "tut_moves.h"
+#include "tut_neighborhoods.h"
 
 using namespace std;
 
@@ -70,8 +70,7 @@ int main()
   // simple aspiration criteria
   mets::best_ever_criteria aspiration_criteria;
   // stop searching when not improving for 100 times
-  mets::noimprove_termination_criteria 
-    noimprove(100);
+  mets::noimprove_termination_criteria noimprove(100);
   // chain the previous termination criteria with a threshold (when we
   // reach 0 we have solved our problem)
   mets::threshold_termination_criteria 

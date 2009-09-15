@@ -17,7 +17,7 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
-#include "tut_moves.hh"
+#include "tut_moves.h"
 
 class full_neighborhood : public mets::move_manager {
 public:
