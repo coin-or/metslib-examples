@@ -25,30 +25,26 @@ public:
     return (mets::gol_type)c_m;
   }
   
-  /// @brief Specialized copy operator
-  qap_model&
-  operator=(const qap_model& o)
-  {
-    unsigned int n = o.index.size();
-    index.resize(n);
-    a.resize(n);
-    b.resize(n);
-    for(unsigned int ii = 0; ii != n; ++ii)
-      { a[ii].resize(n); b[ii].resize(n); }
-    index = o.index;
-    a = o.a;
-    b = o.b;
-    c_m = o.c_m;
-    return *this;
-  }
-  
-  /// @brief Virtual copy operator (this is used by the algorithm to
-  /// record the best solution)
-  feasible_solution&
-  operator=(const mets::feasible_solution& sol)
+  void copy_from(const mets::feasible_solution& sol)
   {
     const qap_model* o = dynamic_cast<const qap_model*>(&sol);
-    return this->operator=(*o);
+    if(o)
+      {
+	unsigned int n = o->index.size();
+	index.resize(n);
+	a.resize(n);
+	b.resize(n);
+	for(unsigned int ii = 0; ii != n; ++ii)
+	  { a[ii].resize(n); b[ii].resize(n); }
+	index = o->index;
+	a = o->a;
+	b = o->b;
+	c_m = o->c_m;
+      }
+    else
+      {
+	std::cerr << "Should not happen." << std::endl;
+      }
   }
   
   unsigned int size() const { return index.size(); }

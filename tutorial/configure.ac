@@ -17,6 +17,7 @@ dnl -----------------------------------------------
 dnl Checks for programs.
 dnl -----------------------------------------------
 
+PKG_PROG_PKG_CONFIG(0.9)
 AC_PROG_CXX
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
