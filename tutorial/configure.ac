@@ -37,10 +37,10 @@ dnl ---------------------------------------------
 dnl Turn off optimizations on demand
 dnl ---------------------------------------------
 release_version=yes
-AC_ARG_ENABLE(release, [  --enable-debug        Turn off optimizations.  ], \
- if test "$enableval" = "yes"; then \
+AC_ARG_ENABLE(debug, [  --enable-debug        Turn off optimizations.  ], \
+if test "$enableval" = "yes"; then \
 	release_version=no
-fi;)	
+fi;)
 
 if test $release_version = no; then 
   CFLAGS=`echo $CFLAGS | sed s/-O2//`

@@ -48,7 +48,6 @@ protected:
 
 int main() 
 {
-  
   // simple tabu search for the subset sum problem
 
   // the set
