@@ -3,7 +3,11 @@
 #include <cassert>
 #include <valarray>
 #include <algorithm>
-#include <tr1/random>
+#if defined (WIN32)
+#  include <random>
+#else
+#  include <tr1/random>
+#endif
 #include <metslib/mets.h>
 
 class qap_model : public mets::feasible_solution
