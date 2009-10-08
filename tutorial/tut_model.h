@@ -20,11 +20,6 @@
 #include <numeric>
 #include <cassert>
 #include <algorithm>
-#if defined (WIN32) 
-#  include <random>
-#else
-#  include <tr1/random>
-#endif
 #include <metslib/mets.h>
 
 /// @brief The tutorial model is a simple model for the subset sum problem
