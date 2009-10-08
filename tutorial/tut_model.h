@@ -56,21 +56,13 @@ public:
       return diff;
   }
 
-  /// @brief Specialized copy operator
-  subsetsum&
-  operator=(const subsetsum& o)
-  {
-    delta_m = o.delta_m;
-    set_m = o.set_m;
-    return *this;
-  }
-
-  /// @brief This method is needed by the algorithm to record the
+   /// @brief This method is needed by the algorithm to record the
   /// best solution.
-  mets::feasible_solution& operator=(const mets::feasible_solution& o)
+  void copy_from(const mets::feasible_solution& o)
   {
     const subsetsum& s = dynamic_cast<const subsetsum&>(o);
-    return this->operator=(s);
+    delta_m = s.delta_m;
+    set_m = s.set_m;
   }
 
   /// @brief Utility methods

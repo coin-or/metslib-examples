@@ -57,7 +57,8 @@ int main()
 		    -323, -498, 407, -81, 445, -308, 258, -274, 156 };
   vector<int> v(&numbers[0], &numbers[sizeof(numbers)/sizeof(int)]);
 
-  // the starting point 
+  // Search the subset of v such that it sums up to a number as near
+  // to 109 as possible
   subsetsum model(v, 109);
   // the best known solution
   subsetsum best(model);
