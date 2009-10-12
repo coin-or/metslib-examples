@@ -16,7 +16,9 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
+// Include metslib from the metslib subfolder
 #include <metslib/mets.h>
+// Include the tutorial model (and neighborhood) definitions
 #include "tut_model.h"
 #include "tut_moves.h"
 #include "tut_neighborhoods.h"
@@ -57,24 +59,44 @@ int main()
   vector<int> v(&numbers[0], &numbers[sizeof(numbers)/sizeof(int)]);
 
   // Search the subset of v such that it sums up to a number as near
-  // to 109 as possible
+  // to 109 as possible.
+  // subsetsum is derived from mets::feasible_solution in tut_model.h 
   subsetsum model(v, 109);
-  // the best known solution
+  // storage for the best known solution.
   subsetsum best(model);
-  // our neighborhood generator
+
+  // our neighborhood generator the neighborhood is explored using the
+  // following instance derived from mets::move_manager in
+  // tut_neighborhoods.h. Each element of the neighborhood is an
+  // instance of a subclass mets::mana_move defined in tut_moves.h.
   full_neighborhood neigh(model.size());
-  // progress logger to be attached to the algorithm
+
+  // progress logger to be attached to the algorithm (defined previously)
   logger g(clog);
+
+  // We are done defining the model in the metslib framework, now we
+  // can use the toolkit provided classes to try solve our problem.
+
+
   // simple tabu list (recency on moves)
   mets::simple_tabu_list tabu_list(5);
   // simple aspiration criteria
   mets::best_ever_criteria aspiration_criteria;
+
   // stop searching when not improving for 100 times
   mets::noimprove_termination_criteria noimprove(100);
   // chain the previous termination criteria with a threshold (when we
-  // reach 0 we have solved our problem)
+  // reach 0 we have solved our problem). The resulting
+  // threshold_noimprove criterion terminate either when the objective
+  // function reaches 0 or after 100 non improving moves.
   mets::threshold_termination_criteria 
     threshold_noimprove(&noimprove, 0);
+
+  // Create a tabu_search algorithm instance starting from "model",
+  // recording the best solution in "best", exploring the neighborhood
+  // using "neigh", using the tabu list "tabu_list", the best ever
+  // aspiration criteria "aspiration_criteria" and the combined
+  // termination criteria "threshold_noimprove".
   mets::tabu_search algorithm(model, 
 			      best, 
 			      neigh, 
