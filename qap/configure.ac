@@ -3,7 +3,6 @@ dnl Initialization macros.
 dnl --------------------------------
 
 AC_INIT(qap, 0.4.3, mirko.maischberger@gmail.com)
-AM_CONFIG_HEADER(src/config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([config])
 
@@ -18,7 +17,7 @@ dnl Checks for programs.
 dnl -----------------------------------------------
 
 AC_PROG_CXX
-AM_PROG_LIBTOOL
+dnl AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
 dnl -----------------------------------------------
