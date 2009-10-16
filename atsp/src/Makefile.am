@@ -1,6 +1,6 @@
 bin_PROGRAMS = atsp
 
-qap_SOURCES = main.cc atsp_model.hpp 
+atsp_SOURCES = main.cc atsp_model.hpp 
 
 INCLUDES = $(metslib_CFLAGS)
 
