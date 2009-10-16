@@ -1,0 +1,31 @@
+ATSP
+====
+
+This implements a very simple tabu search strategy solver for the
+Asymmetric Traveling Salseperson Problem (ATSP for short). This is an
+example to show how to link and use the METSlib library.
+
+A sample problem in TSPLIB format in the data folder (see data/README
+for details)
+
+As usual you need to 
+
+./configure && make
+
+You'll also need a C++ compiler with TR1 extensions (like gcc4) and
+the METSlib core installed on the system.
+
+Hacking the code
+----------------
+
+src/
+
+  main.cc - the qap permutation problem is loaded and solved with tabu
+            search
+
+  atsp_model.hpp - a class representing solutions to the problem (with
+                   a cost function)
+
+
+Happy hacking
+- Mirko Maischberger
