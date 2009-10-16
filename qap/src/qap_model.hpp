@@ -10,17 +10,15 @@
 #endif
 #include <metslib/mets.h>
 
-class qap_model : public mets::feasible_solution
+class qap_model : public mets::permutation_problem
 {
 protected:
-  std::valarray<int> index;
   std::valarray< std::valarray<int> > a;
   std::valarray< std::valarray<int> > b;
   int64_t c_m;
   
 public:
-  
-  qap_model() : index(), a(), b(), c_m(0) {};
+  qap_model() : permutation_problem(0), a(), b(), c_m(0) {};
   
   /// @brief Returns the objective function value. This value is
   /// updated every time the variable is modified.
@@ -34,13 +32,12 @@ public:
     const qap_model* o = dynamic_cast<const qap_model*>(&sol);
     if(o)
       {
-	unsigned int n = o->index.size();
-	index.resize(n);
+	mets::permutation_problem::copy_from(sol);
+	unsigned int n = o->pi_m.size();
 	a.resize(n);
 	b.resize(n);
 	for(unsigned int ii = 0; ii != n; ++ii)
 	  { a[ii].resize(n); b[ii].resize(n); }
-	index = o->index;
 	a = o->a;
 	b = o->b;
 	c_m = o->c_m;
@@ -50,37 +47,18 @@ public:
 	std::cerr << "Should not happen." << std::endl;
       }
   }
-  
-  unsigned int size() const { return index.size(); }
-  
-  /// @brief Generate a random starting point.
-  template<typename rng_t>
-  void
-  random_shuffle(rng_t rng)
+
+  void random_shuffle(std::tr1::mt19937& rng)
   {
-    std::tr1::uniform_int<> unigen(0, index.size());
-    std::tr1::variate_generator<rng_t, 
-      std::tr1::uniform_int<> >gen(rng, unigen);
-    std::random_shuffle(&index[0], &index[index.size()], gen);
+    mets::random_shuffle(*this, rng);
     c_m = cost_calculator();
   }
-  
-  /// @brief Generate a random starting point.
-  template<typename rng_t>
-  void
-  perturbate(unsigned int n, rng_t rng)
+
+  void perturbate(int n, std::tr1::mt19937& rng)
   {
-    std::tr1::uniform_int<> int_range;
-    for(unsigned int ii=0; ii!=n;++ii) 
-      {
-	int p1 = int_range(rng, a.size());
-	int p2 = int_range(rng, a.size());
-	while(p1 == p2) 
-	  p2 = int_range(rng, a.size());
-	swap(p1, p2);
-      }
+    mets::perturbate(*this, n, rng);
   }
-  
+
   /// @brief: swap move that does delta updates of the objective.
   ///
   /// This is much faster as it runs in O(n) instead of O(n^2) (it
@@ -91,20 +69,22 @@ public:
   {
     for(unsigned int ii=0; ii != a.size(); ++ii)
       {
-	c_m -= (a[i][ii]) * b[index[i]][index[ii]];
-	c_m -= (a[ii][i]) * b[index[ii]][index[i]];
-	c_m -= (a[j][ii]) * b[index[j]][index[ii]];
-	c_m -= (a[ii][j]) * b[index[ii]][index[j]];
+	c_m -= a[i][ii] * b[pi_m[i]][pi_m[ii]];
+	c_m -= a[ii][i] * b[pi_m[ii]][pi_m[i]];
+	c_m -= a[j][ii] * b[pi_m[j]][pi_m[ii]];
+	c_m -= a[ii][j] * b[pi_m[ii]][pi_m[j]];
       }
-    std::swap(index[i],index[j]);
+    mets::permutation_problem::swap(i, j);
     for(unsigned int ii=0; ii != a.size(); ++ii)
       {
-	c_m += (a[i][ii]) * b[index[i]][index[ii]];
-	c_m += (a[ii][i]) * b[index[ii]][index[i]];
-	c_m += (a[j][ii]) * b[index[j]][index[ii]];
-	c_m += (a[ii][j]) * b[index[ii]][index[j]];
+	c_m += a[i][ii] * b[pi_m[i]][pi_m[ii]];
+	c_m += a[ii][i] * b[pi_m[ii]][pi_m[i]];
+	c_m += a[j][ii] * b[pi_m[j]][pi_m[ii]];
+	c_m += a[ii][j] * b[pi_m[ii]][pi_m[j]];
      }
-    // assert(c_m == cost_calculator());
+    
+    // c_m = cost_calculator();    
+    assert(c_m == cost_calculator());
   }
 
   friend std::ostream& operator<<(std::ostream& os, const qap_model& p);
@@ -116,9 +96,9 @@ protected:
   int64_t cost_calculator() const
   {
     int64_t sum = 0;
-    for(unsigned int ii = 0; ii != index.size(); ++ii)
-      for(unsigned int jj = 0; jj != index.size(); ++jj)
-	sum += (a[ii][jj]) * b[index[ii]][index[jj]];
+    for(unsigned int ii = 0; ii != pi_m.size(); ++ii)
+      for(unsigned int jj = 0; jj != pi_m.size(); ++jj)
+	sum += (a[ii][jj]) * b[pi_m[ii]][pi_m[jj]];
     return sum;
   }
 
@@ -128,8 +108,8 @@ protected:
 std::ostream&
 operator<<(std::ostream& os, const qap_model& qap)
 {
-  for(unsigned int ii = 0; ii != qap.index.size(); ++ii) 
-    os << (qap.index[ii]+1) << " ";
+  for(unsigned int ii = 0; ii != qap.pi_m.size(); ++ii) 
+    os << (qap.pi_m[ii]+1) << " ";
   return os;
 }
 
@@ -138,11 +118,11 @@ operator>>(std::istream& is, qap_model& qap)
 {
   unsigned int n;
   is >> n;
-  qap.index.resize(n);
+  qap.pi_m.resize(n);
   qap.a.resize(n);
   qap.b.resize(n);
   for(unsigned int ii = 0; ii != n; ++ii)
-    { qap.index[ii] = ii; qap.a[ii].resize(n); qap.b[ii].resize(n); }
+    { qap.pi_m[ii] = ii; qap.a[ii].resize(n); qap.b[ii].resize(n); }
 
   for(unsigned int ii = 0; ii != n; ++ii)
     for(unsigned int jj = 0; jj != n; ++jj)

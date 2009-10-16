@@ -6,8 +6,8 @@
 #include <metslib/mets.h>
 
 #include "qap_model.hpp"
-#include "qap_move.hpp"
-#include "qap_neighborhood.hpp"
+//#include "qap_move.hpp"
+//#include "qap_neighborhood.hpp"
 
 using namespace std;
 
@@ -65,16 +65,18 @@ int main(int argc, char* argv[])
   // best solution instance for recording
   qap_model best_solution(problem_instance);
 
+  cout << best_solution.cost_function() << " " << best_solution << endl;
+  cout << problem_instance.cost_function() << " " << problem_instance << endl;
+  
   // user defined neighborhood generator 
-  qap_neighborhood<std::tr1::mt19937> neighborhood(rng, N*12,N*6);
-  // qap_neighborhood<std::tr1::mt19937> neighborhood(rng, N*6,N*3);
+  mets::swap_neighborhood<std::tr1::mt19937> neighborhood(rng, N*12, N*6);
 
   // log to standard error
   logger g(clog);
 
   for(unsigned int starts = 0; starts != N/5; ++starts) {
     // generate a random starting point
-    problem_instance.random_shuffle<std::tr1::mt19937>(rng);
+    problem_instance.random_shuffle(rng);
     
     // use framework provided strategies
     mets::simple_tabu_list tabu_list(tlg(rng));
