@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
   cout << problem_instance.cost_function() << " " << problem_instance << endl;
   
   // user defined neighborhood generator 
-  mets::swap_neighborhood<std::tr1::mt19937> neighborhood(rng, N*(N-1)/4, N*2);
+  mets::invert_full_neighborhood neighborhood(N);
 
   // log to standard error
   logger g(clog);
