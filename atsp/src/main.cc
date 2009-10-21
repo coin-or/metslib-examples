@@ -58,59 +58,71 @@ int main(int argc, char* argv[])
 
   unsigned int N = problem_instance.size();
 
-  std::tr1::uniform_int<int> tlg(3, N);
+  std::tr1::uniform_int<int> tlg(N/2, 3*N);
 
-  // best solution instance for recording
-  atsp_model best_solution(problem_instance);
+  // best ever solution 
+  atsp_model optimum(problem_instance);
 
-  cout << best_solution.cost_function() << " " << best_solution << endl;
-  cout << problem_instance.cost_function() << " " << problem_instance << endl;
-  
-  // user defined neighborhood generator 
-  mets::invert_full_neighborhood neighborhood(N);
+  // Neighborhood made of all possibile subsequence inversions.
+  std::vector<mets::move_manager*> neighborhoods;
+  neighborhoods.push_back(new mets::invert_full_neighborhood(N));
+  neighborhoods.push_back(new mets::swap_full_neighborhood(N));
 
   // log to standard error
   logger g(clog);
 
-  for(unsigned int starts = 0; starts != 5; ++starts) {
+  for(unsigned int starts = 0; starts != 50; ++starts) {
     // generate a random starting point
     problem_instance.random_shuffle(rng);
-    
-    // use framework provided strategies
-    mets::simple_tabu_list tabu_list(tlg(rng));
-    mets::best_ever_criteria aspiration_criteria;
-    
-    for(int iteration=0; iteration!=10; ++iteration) {
-      // random tabu list tenure
-      tabu_list.tenure(tlg(rng));
 
-      // fixed number of non improving moves before termination
-      mets::noimprove_termination_criteria 
-	termination_criteria(100);
-      
+    // best solution instance (records the best solution of each iteration)
+    atsp_model major_best_solution(problem_instance);
+
+    // Do minor iterations with a max no-improve criterion
+    mets::noimprove_termination_criteria minor_it_criteria(20);
+    while(!minor_it_criteria(major_best_solution)) {
+
+      // best solution instance (records the best solution of each iteration)
+      atsp_model minor_best_solution(problem_instance);
+
+      int it = minor_it_criteria.iteration();
+      int nsize = neighborhoods.size();
       // the search algorithm
-      mets::tabu_search algorithm(problem_instance, 
-				  best_solution, 
-				  neighborhood, 
-				  tabu_list, 
-				  aspiration_criteria, 
-				  termination_criteria);
+      mets::local_search algorithm(problem_instance, 
+				   minor_best_solution, 
+				   *(neighborhoods[it%nsize]),
+				   true);
       
+      std::cout << " * Run: " << starts+1 << std::flush;
+
       algorithm.attach(g);
-      std::cout << "New iteration with tenure: " 
-		<< tabu_list.tenure() << std::endl;
       algorithm.search();
+
+      if(minor_best_solution.cost_function() 
+	 < major_best_solution.cost_function())
+	major_best_solution = minor_best_solution;
       
-      // restore best solution
-      problem_instance = best_solution;
+      if(major_best_solution.cost_function() 
+	 < optimum.cost_function())
+	optimum = major_best_solution;
+      
+      std::cout << " Cost: " << minor_best_solution.cost_function() 
+		<< "/" << major_best_solution.cost_function() 
+		<< std::endl;
+      
+      problem_instance = major_best_solution;
       // perturbate point with random swaps
-      problem_instance.perturbate(N/10, rng);
+      problem_instance.perturbate(N/3, rng);
     }
     
-    cout << "Best so far: " << best_solution.cost_function()  << endl;
+    cout << "Best of this run/so far: " 
+	 << major_best_solution.cost_function() 
+	 << "/" 
+	 << optimum.cost_function()  << endl;
   }
+  cout << "Best ever: " << optimum.cost_function()  << endl;
   // write solution to standard output
-  cout << best_solution.size() << " " 
-       << best_solution.cost_function()  << endl;
-  cout << best_solution << endl;
+  cout << optimum.size() << " " 
+       << optimum.cost_function()  << endl;
+  cout << optimum << endl;
 }

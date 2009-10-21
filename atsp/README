@@ -15,13 +15,17 @@ As usual you need to
 You'll also need a C++ compiler with TR1 extensions (like gcc4) and
 the METSlib core installed on the system.
 
+This sample uses the local_search algorithm and a 2-opt move
+neighborhood (using the provided mets::invert_full_neighborhood).
+
+
 Hacking the code
 ----------------
 
 src/
 
-  main.cc - the qap permutation problem is loaded and solved with tabu
-            search
+  main.cc - the atsp permutation problem is loaded and solved with
+            tabu search
 
   atsp_model.hpp - a class representing solutions to the problem (with
                    a cost function)
