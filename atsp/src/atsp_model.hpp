@@ -77,6 +77,34 @@ protected:
 
 };
 
+
+/// @brief Generates a the full subsequence inversion neighborhood.
+class three_opt_full_neighborhood : public mets::move_manager
+{
+public:
+  three_opt_full_neighborhood(int size) : move_manager()
+  {
+    for(int ii(0); ii!=size; ++ii)
+      for(int jj(0); jj!=size; ++jj)
+	for(int kk(0); kk!=size; ++kk)
+	  if(ii != jj && ii != kk && jj != kk)
+	    {
+	      mets::complex_mana_move* m = new mets::complex_mana_move();
+	      m->push_back(new mets::invert_subsequence(ii,jj));
+	      m->push_back(new mets::invert_subsequence(kk, (kk+1)%size));
+	      moves_m.push_back(m);
+	    }
+  } 
+  
+  /// @brief Dtor.
+  ~three_opt_full_neighborhood() { }
+  
+  /// @brief Selects a different set of moves at each iteration.
+  void refresh(mets::feasible_solution& s) { }
+  
+};
+//________________________________________________________________________
+
 // Input/Output functions
 std::ostream&
 operator<<(std::ostream& os, const atsp_model& atsp)

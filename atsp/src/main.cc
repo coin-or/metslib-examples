@@ -64,14 +64,15 @@ int main(int argc, char* argv[])
   atsp_model optimum(problem_instance);
 
   // Neighborhood made of all possibile subsequence inversions.
+  // It's the 2-opt neighborhood
   std::vector<mets::move_manager*> neighborhoods;
   neighborhoods.push_back(new mets::invert_full_neighborhood(N));
-  neighborhoods.push_back(new mets::swap_full_neighborhood(N));
+  neighborhoods.push_back(new three_opt_full_neighborhood(N));
 
   // log to standard error
   logger g(clog);
 
-  for(unsigned int starts = 0; starts != 50; ++starts) {
+  for(unsigned int starts = 0; starts != 3; ++starts) {
     // generate a random starting point
     problem_instance.random_shuffle(rng);
 
@@ -79,36 +80,37 @@ int main(int argc, char* argv[])
     atsp_model major_best_solution(problem_instance);
 
     // Do minor iterations with a max no-improve criterion
-    mets::noimprove_termination_criteria minor_it_criteria(20);
-    while(!minor_it_criteria(major_best_solution)) {
+    mets::noimprove_termination_criteria minor_it_criteria(8);
+    while(!minor_it_criteria(major_best_solution))
+      {
 
       // best solution instance (records the best solution of each iteration)
       atsp_model minor_best_solution(problem_instance);
 
-      int it = minor_it_criteria.iteration();
-      int nsize = neighborhoods.size();
-      // the search algorithm
-      mets::local_search algorithm(problem_instance, 
-				   minor_best_solution, 
-				   *(neighborhoods[it%nsize]),
-				   true);
-      
-      std::cout << " * Run: " << starts+1 << std::flush;
+      for(int ii=0; ii!=neighborhoods.size(); ++ii)
+	{
+	  std::cout << " * Run: " << starts+1 <<
+	    "/" << ii << std::flush;
+	  // the search algorithm
+	  mets::local_search algorithm(problem_instance, 
+				       minor_best_solution, 
+				       *(neighborhoods[ii]),
+				       true);
+	  algorithm.attach(g);
+	  algorithm.search();
+	  if(minor_best_solution.cost_function() 
+	     < major_best_solution.cost_function())
+	    major_best_solution = minor_best_solution;
+	  
+	  if(major_best_solution.cost_function() 
+	     < optimum.cost_function())
+	    optimum = major_best_solution;
+	  
+	  std::cout << " Cost: " << minor_best_solution.cost_function() 
+		    << "/" << major_best_solution.cost_function() 
+		    << std::endl;
+      }
 
-      algorithm.attach(g);
-      algorithm.search();
-
-      if(minor_best_solution.cost_function() 
-	 < major_best_solution.cost_function())
-	major_best_solution = minor_best_solution;
-      
-      if(major_best_solution.cost_function() 
-	 < optimum.cost_function())
-	optimum = major_best_solution;
-      
-      std::cout << " Cost: " << minor_best_solution.cost_function() 
-		<< "/" << major_best_solution.cost_function() 
-		<< std::endl;
       
       problem_instance = major_best_solution;
       // perturbate point with random swaps
