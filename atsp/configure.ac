@@ -2,7 +2,8 @@ dnl --------------------------------
 dnl Initialization macros.
 dnl --------------------------------
 
-AC_INIT(tutorial, 0.4.4, mirko.maischberger@gmail.com)
+AC_INIT(tsp, 0.4.4, mirko.maischberger@gmail.com)
+AM_CONFIG_HEADER(src/config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([config])
 
@@ -10,13 +11,12 @@ dnl -----------------------------------------------
 dnl Package name and version number (user defined)
 dnl -----------------------------------------------
 
-AM_INIT_AUTOMAKE(tutorial, 0.4.4, mirko.maischberger@gmail.com)
+AM_INIT_AUTOMAKE(tsp, 0.4.4, mirko.maischberger@gmail.com)
 
 dnl -----------------------------------------------
 dnl Checks for programs.
 dnl -----------------------------------------------
 
-PKG_PROG_PKG_CONFIG([0.9])
 AC_PROG_CXX
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
@@ -36,15 +36,18 @@ dnl ---------------------------------------------
 dnl Turn off optimizations on demand
 dnl ---------------------------------------------
 release_version=yes
-AC_ARG_ENABLE(debug, [  --enable-debug        Turn off optimizations.  ], \
-if test "$enableval" = "yes"; then \
+AC_ARG_ENABLE(release, [  --enable-debug        Turn off optimizations.  ], \
+ if test "$enableval" = "yes"; then \
 	release_version=no
-fi;)
+fi;)	
 
 if test $release_version = no; then 
-  CFLAGS=`echo $CFLAGS | sed s/-O2//`
-  CXXFLAGS=`echo $CXXFLAGS | sed s/-O2//`
-  CPPFLAGS=`echo $CPPFLAGS | sed s/-O2//`
+  CFLAGS=`echo $CFLAGS | sed s/-O2//` -g -fno-default-inline
+  CXXFLAGS=`echo $CXXFLAGS | sed s/-O2//` -g -fno-default-inline
+  CPPFLAGS=`echo $CPPFLAGS | sed s/-O2//` -g -fno-default-inline
+  CFLAGS=`echo $CFLAGS | sed s/-O3//`
+  CXXFLAGS=`echo $CXXFLAGS | sed s/-O3//`
+  CPPFLAGS=`echo $CPPFLAGS | sed s/-O3//`
 fi
 
 dnl ---------------------------------------------
@@ -62,4 +65,7 @@ dnl -----------------------------------------------
 dnl Generates Makefiles.
 dnl -----------------------------------------------
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile \
+	  src/Makefile 
+)
+

@@ -6,8 +6,6 @@
 #include <metslib/mets.h>
 
 #include "qap_model.hpp"
-#include "qap_move.hpp"
-#include "qap_neighborhood.hpp"
 
 using namespace std;
 
@@ -63,33 +61,46 @@ int main(int argc, char* argv[])
   std::tr1::uniform_int<int> tlg(7, N*7);
 
   // best solution instance for recording
-  qap_model best_solution(problem_instance);
+  qap_model incumbent(problem_instance);
 
-  // user defined neighborhood generator 
-  qap_neighborhood<std::tr1::mt19937> neighborhood(rng, N*12,N*6);
-  // qap_neighborhood<std::tr1::mt19937> neighborhood(rng, N*6,N*3);
+  // A library provided neighborhood make of random swaps and double
+  // swaps.
+  mets::swap_neighborhood<std::tr1::mt19937> 
+    neighborhood(rng, N*12, N*6);
 
   // log to standard error
   logger g(clog);
 
   for(unsigned int starts = 0; starts != N/5; ++starts) {
     // generate a random starting point
-    problem_instance.random_shuffle<std::tr1::mt19937>(rng);
-    
+    problem_instance.random_shuffle(rng);
+
+    // record the best solution of each major iteration
+    qap_model major_best_solution(problem_instance);
+
     // use framework provided strategies
     mets::simple_tabu_list tabu_list(tlg(rng));
     mets::best_ever_criteria aspiration_criteria;
     
-    for(int iteration=0; iteration!=N/5; ++iteration) {
+    // Do minor iterations with a max no-improve criterion
+    mets::noimprove_termination_criteria 
+      minor_it_criteria(20);
+
+    while(!minor_it_criteria(major_best_solution)) {
+      
+      // record best solution of minor iteration
+      qap_model minor_best_solution(problem_instance);
+
       // random tabu list tenure
       tabu_list.tenure(tlg(rng));
+
       // fixed number of non improving moves before termination
       mets::noimprove_termination_criteria 
 	termination_criteria(750);
       
       // the search algorithm
       mets::tabu_search algorithm(problem_instance, 
-				  best_solution, 
+				  minor_best_solution, 
 				  neighborhood, 
 				  tabu_list, 
 				  aspiration_criteria, 
@@ -100,16 +111,27 @@ int main(int argc, char* argv[])
 		<< tabu_list.tenure() << std::endl;
       algorithm.search();
       
-      // restore best solution
-      problem_instance = best_solution;
+      if(minor_best_solution.cost_function() 
+	 < major_best_solution.cost_function())
+	major_best_solution = minor_best_solution;
+      
+      if(major_best_solution.cost_function() 
+	 < incumbent.cost_function())
+	incumbent = major_best_solution;
+
+      problem_instance = major_best_solution;
       // perturbate point with N/5 random swaps
       problem_instance.perturbate(N/4, rng);
     }
     
-    cout << "Best so far: " << best_solution.cost_function()  << endl;
+    cout << "Best of this run/so far: " 
+	 << major_best_solution.cost_function()  
+	 << "/"
+	 << incumbent.cost_function() << endl;
+
   }
   // write solution to standard output
-  cout << best_solution.size() << " " 
-       << best_solution.cost_function()  << endl;
-  cout << best_solution << endl;
+  cout << incumbent.size() << " " 
+       << incumbent.cost_function()  << endl;
+  cout << incumbent << endl;
 }

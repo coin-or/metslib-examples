@@ -2,7 +2,8 @@ dnl --------------------------------
 dnl Initialization macros.
 dnl --------------------------------
 
-AC_INIT(qap, 0.4.3, mirko.maischberger@gmail.com)
+AC_INIT(qap, 0.4.4, mirko.maischberger@gmail.com)
+dnl AM_CONFIG_HEADER(src/config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([config])
 
@@ -10,14 +11,15 @@ dnl -----------------------------------------------
 dnl Package name and version number (user defined)
 dnl -----------------------------------------------
 
-AM_INIT_AUTOMAKE(qap, 0.4.3, mirko.maischberger@gmail.com)
+AM_INIT_AUTOMAKE(qap, 0.4.4, mirko.maischberger@gmail.com)
 
 dnl -----------------------------------------------
 dnl Checks for programs.
 dnl -----------------------------------------------
 
+PKG_PROG_PKG_CONFIG([0.9])
 AC_PROG_CXX
-dnl AM_PROG_LIBTOOL
+AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
 dnl -----------------------------------------------
@@ -26,7 +28,7 @@ dnl -----------------------------------------------
 
 AC_LANG_CPLUSPLUS
 
-PKG_CHECK_MODULES(metslib, metslib >= 0.4.3)
+PKG_CHECK_MODULES(metslib, metslib >= 0.4.4)
 AC_SUBST(metslib_CFLAGS)
 AC_SUBST(metslib_LIBS)
 
@@ -41,9 +43,12 @@ AC_ARG_ENABLE(release, [  --enable-debug        Turn off optimizations.  ], \
 fi;)	
 
 if test $release_version = no; then 
-  CFLAGS=`echo $CFLAGS | sed s/-O2//`
+  CFLAGS=`echo $CFLAGS | sed s/-O2//` 
   CXXFLAGS=`echo $CXXFLAGS | sed s/-O2//`
   CPPFLAGS=`echo $CPPFLAGS | sed s/-O2//`
+  CFLAGS=`echo $CFLAGS | sed s/-O3//`
+  CXXFLAGS=`echo $CXXFLAGS | sed s/-O3//`
+  CPPFLAGS=`echo $CPPFLAGS | sed s/-O3//`
 fi
 
 dnl ---------------------------------------------
