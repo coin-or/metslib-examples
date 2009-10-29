@@ -3,7 +3,7 @@ dnl Initialization macros.
 dnl --------------------------------
 
 AC_INIT(qap, 0.4.4, mirko.maischberger@gmail.com)
-AM_CONFIG_HEADER(src/config.h)
+dnl AM_CONFIG_HEADER(src/config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([config])
 
@@ -17,6 +17,7 @@ dnl -----------------------------------------------
 dnl Checks for programs.
 dnl -----------------------------------------------
 
+PKG_PROG_PKG_CONFIG([0.9])
 AC_PROG_CXX
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
@@ -42,9 +43,9 @@ AC_ARG_ENABLE(release, [  --enable-debug        Turn off optimizations.  ], \
 fi;)	
 
 if test $release_version = no; then 
-  CFLAGS=`echo $CFLAGS | sed s/-O2//` -g -fno-default-inline
-  CXXFLAGS=`echo $CXXFLAGS | sed s/-O2//` -g -fno-default-inline
-  CPPFLAGS=`echo $CPPFLAGS | sed s/-O2//` -g -fno-default-inline
+  CFLAGS=`echo $CFLAGS | sed s/-O2//` 
+  CXXFLAGS=`echo $CXXFLAGS | sed s/-O2//`
+  CPPFLAGS=`echo $CPPFLAGS | sed s/-O2//`
   CFLAGS=`echo $CFLAGS | sed s/-O3//`
   CXXFLAGS=`echo $CXXFLAGS | sed s/-O3//`
   CPPFLAGS=`echo $CPPFLAGS | sed s/-O3//`
