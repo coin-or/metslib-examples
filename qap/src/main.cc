@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
   std::tr1::uniform_int<int> tlg(7, N*7);
 
   // best solution instance for recording
-  qap_model optimum(problem_instance);
+  qap_model incumbent(problem_instance);
 
   // A library provided neighborhood make of random swaps and double
   // swaps.
@@ -116,8 +116,8 @@ int main(int argc, char* argv[])
 	major_best_solution = minor_best_solution;
       
       if(major_best_solution.cost_function() 
-	 < optimum.cost_function())
-	optimum = major_best_solution;
+	 < incumbent.cost_function())
+	incumbent = major_best_solution;
 
       problem_instance = major_best_solution;
       // perturbate point with N/5 random swaps
@@ -127,11 +127,11 @@ int main(int argc, char* argv[])
     cout << "Best of this run/so far: " 
 	 << major_best_solution.cost_function()  
 	 << "/"
-	 << optimum.cost_function() << endl;
+	 << incumbent.cost_function() << endl;
 
   }
   // write solution to standard output
-  cout << optimum.size() << " " 
-       << optimum.cost_function()  << endl;
-  cout << optimum << endl;
+  cout << incumbent.size() << " " 
+       << incumbent.cost_function()  << endl;
+  cout << incumbent << endl;
 }
