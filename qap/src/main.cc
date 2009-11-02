@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
   // best solution instance for recording
   qap_model incumbent(problem_instance);
 
-  // A library provided neighborhood make of random swaps and double
+  // A library provided neighborhood made of random swaps and double
   // swaps.
   mets::swap_neighborhood<std::tr1::mt19937> 
     neighborhood(rng, N*12, N*6);

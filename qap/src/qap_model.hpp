@@ -10,6 +10,13 @@
 #endif
 #include <metslib/mets.h>
 
+/// @brief The QAP model.
+///
+/// Instead of deriving directly from mets::feasible_solution we use
+/// the mets::permutation_problem base class that stores the variables
+/// for us and that offers some pre-defined moves/neighborhoods we can
+/// use.
+///
 class qap_model : public mets::permutation_problem
 {
 protected:
@@ -48,12 +55,15 @@ public:
       }
   }
 
+  /// @brief Shuffles the permutation and updates the cost.
   void random_shuffle(std::tr1::mt19937& rng)
   {
     mets::random_shuffle(*this, rng);
     c_m = cost_calculator();
   }
 
+  /// @brief Does some random swaps (since swap is virtual the cost is
+  /// automatically updated after the perturbaraion).
   void perturbate(int n, std::tr1::mt19937& rng)
   {
     mets::perturbate(*this, n, rng);
@@ -67,6 +77,7 @@ public:
   void
   swap(int i, int j)
   {
+    // remove contribution i,j from cost 
     for(unsigned int ii=0; ii != a.size(); ++ii)
       {
 	c_m -= a[i][ii] * b[pi_m[i]][pi_m[ii]];
@@ -74,7 +85,10 @@ public:
 	c_m -= a[j][ii] * b[pi_m[j]][pi_m[ii]];
 	c_m -= a[ii][j] * b[pi_m[ii]][pi_m[j]];
       }
+    // call the permutation_problem::swap method that does the actual
+    // swapping of the variables.
     mets::permutation_problem::swap(i, j);
+    // add contribution i,j to cost (after swap)
     for(unsigned int ii=0; ii != a.size(); ++ii)
       {
 	c_m += a[i][ii] * b[pi_m[i]][pi_m[ii]];
@@ -92,7 +106,7 @@ public:
   
 protected:
   
-  // Straight cost calculator
+  // Calculate cost from scratch.
   int64_t cost_calculator() const
   {
     int64_t sum = 0;

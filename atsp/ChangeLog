@@ -1,3 +1,0 @@
-2009-09-16 Mirko Maischberger <mirko.maischberger@gmail.com>
-	* stc/main.cc, src/atsp_model.hpp: Initial release implemented
-	using the new mets::permutation_problem.
