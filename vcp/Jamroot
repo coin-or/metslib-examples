@@ -1,0 +1,5 @@
+exe vcp : vcp.cc
+         : <cflags>"`pkg-config --cflags metslib`"
+           <linkflags>"`pkg-config --libs metslib`"
+     ;
+
