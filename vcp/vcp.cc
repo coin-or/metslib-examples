@@ -270,7 +270,7 @@ public:
   void refresh(mets::feasible_solution& other)
   { 
     vcp& v = static_cast<vcp&>(other);
-    boost::uniform_int<> color_dist(0, ki_m);
+    boost::uniform_int<> color_dist(0, ki_m-1);
     boost::uniform_int<> node_dist(0, v.size()-1);
     boost::variate_generator<boost::mt19937&, boost::uniform_int<> >
       colorgen(rng_m, color_dist);
@@ -285,10 +285,10 @@ public:
       }
     for(int ii(0); ii!=dm_m; ++ii)
       {
-	mets::complex_mana_move& cm = 
-	  dynamic_cast<mets::complex_mana_move&>(**m);
-	dynamic_cast<vcp_set*>(cm[0])->set(nodegen(), colorgen());
-	dynamic_cast<vcp_set*>(cm[1])->set(nodegen(), colorgen());
+	mets::complex_mana_move* cm = 
+	  dynamic_cast<mets::complex_mana_move*>(*m);
+	dynamic_cast<vcp_set*>((*cm)[0])->set(nodegen(), colorgen());
+	dynamic_cast<vcp_set*>((*cm)[1])->set(nodegen(), colorgen());
 	++m;
       }
   }
@@ -317,7 +317,6 @@ struct logger : public mets::search_listener
 	iteration++;
 	os << v.cost_function() << "\t";
 	if(iteration % 20 == 0) os << std::flush;
-	if(iteration % 2500 == 0) v.perturbate(g_colors, v.size()/2, gen);
       }
   }
   
@@ -332,12 +331,13 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-  if(argc != 4) {
-    clog << "vcp file.col colors tenure" << endl;
-    exit(1);
-  }
+  if(argc != 4) 
+    {
+      clog << "vcp file.col colors tenure" << endl;
+      exit(1);
+    }
   std::ifstream in(argv[1]);
-  g_colors = ::atoi(argv[2]);
+  int num_colors = ::atoi(argv[2]);
   int tenure = ::atoi(argv[3]);
   vector< pair<int, int> > edges;
   int n, m;
@@ -376,69 +376,94 @@ int main(int argc, char* argv[])
 	}
     }
 
+  assert(n);
+  assert(m);
+  assert( m == edges.size() );
+
   vcp point(n, edges);
   // storage for the best known solution.
   vcp incumbent(point);
-
+  
   boost::mt19937 gen(time(NULL));
-  point.randomize(g_colors, gen);
 
-  // our neighborhood generator the neighborhood is explored using the
-  // following instance derived from mets::move_manager in
-  // tut_neighborhoods.h. Each element of the neighborhood is an
-  // instance of a subclass mets::mana_move defined in tut_moves.h.
-  g_colors -= 5;
-  vcp_neighborhood2 neigh(gen, g_colors, n*g_colors/4, n*g_colors/8);
-  // vcp_neighborhood neigh(n, g_colors);
-  // We are done defining the model in the metslib framework, now we
-  // can use the toolkit provided classes to try solve our problem.
+  boost::uniform_int<> tl_dist(1, n);
+  boost::variate_generator<boost::mt19937&, boost::uniform_int<> >
+    tlg(gen, tl_dist);
 
-  // simple tabu list (recency on moves)
-  mets::simple_tabu_list tabu_list(tenure);
-  // simple aspiration criteria
-  mets::best_ever_criteria aspiration_criteria;
+  g_colors = num_colors;
 
-  // stop searching when not improving for N times
-  mets::noimprove_termination_criteria noimprove(2000);
-  // chain the previous termination criteria with a threshold (when we
-  // reach 0 we have solved our problem). The resulting
-  // threshold_noimprove criterion terminate either when the objective
-  // function reaches 0 or after 100 non improving moves.
-  mets::threshold_termination_criteria 
-    threshold_noimprove(&noimprove, 0);
+  vcp_neighborhood neigh(n, g_colors);
 
-  // Create a tabu_search algorithm instance starting from "model",
-  // recording the best solution in "best", exploring the neighborhood
-  // using "neigh", using the tabu list "tabu_list", the best ever
-  // aspiration criteria "aspiration_criteria" and the combined
-  // termination criteria "threshold_noimprove".
-  mets::tabu_search algorithm(point, 
-			      incumbent, 
-			      neigh, 
-			      tabu_list, 
-			      aspiration_criteria, 
-			      threshold_noimprove);
-  //true);
-  // algorithm.attach(g);
   logger log(cout);
-  algorithm.attach(log);
-  algorithm.search();
 
-  point = incumbent;
+  for(int run=0; run!=10; ++run)
+    {
+      point.randomize(g_colors, gen);
+      vcp major_best(point);
 
-  clog << "Best solution: " << incumbent.cost_function()  << endl;
+      // simple tabu list (recency on moves)
+      mets::simple_tabu_list tabu_list(tlg());
+      
+      // simple aspiration criteria
+      mets::best_ever_criteria aspiration_criteria;
+      
+      mets::noimprove_termination_criteria 
+	minor_it_criteria(20);
 
-  g_colors += 5;
+      while(!minor_it_criteria(major_best)) {
+
+	vcp minor_best(point);	
+
+	mets::noimprove_termination_criteria noimprove(500);
+	mets::threshold_termination_criteria 
+	  threshold_noimprove(&noimprove, 0);
+
+	// random tabu list tenure
+	tabu_list.tenure(tlg());
+
+	// Create a tabu_search algorithm instance starting from "model",
+	// recording the best solution in "best", exploring the neighborhood
+	// using "neigh", using the tabu list "tabu_list", the best ever
+	// aspiration criteria "aspiration_criteria" and the combined
+	// termination criteria "threshold_noimprove".
+	mets::tabu_search algorithm(point, 
+				    minor_best, 
+				    neigh, 
+				    tabu_list, 
+				    aspiration_criteria, 
+				    threshold_noimprove);
+	algorithm.attach(log);
+	std::clog << "New iteration with tenure: " 
+		  << tabu_list.tenure() << std::endl;
+	algorithm.search();
+	
+	if(minor_best.cost_function() 
+	   < major_best.cost_function())
+	  major_best = minor_best;
+	
+	if(major_best.cost_function() 
+	   < incumbent.cost_function())
+	  incumbent = major_best;
+	
+	point = major_best;
+	point.perturbate(g_colors, n/4, gen);
+
+      }
+
+      clog << "Best of this run/so far: " << major_best.cost_function()  
+	   << "/"  << incumbent.cost_function() << endl;
+      
+    }
+
   vcp_neighborhood neigh2(n, g_colors);
   mets::local_search algo2(point, 
-			  incumbent, 
-			  neigh2, 
-			  false);
-
+       			   incumbent, 
+       			   neigh2, 
+			   false);
+  
   algo2.search();
-
+  
   clog << "Best solution: " << incumbent.cost_function()  << endl;
-
   ofstream sol("solution.txt");
   incumbent.print(sol);
   sol.close();
