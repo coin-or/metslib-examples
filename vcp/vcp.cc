@@ -1,6 +1,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 #include <metslib/mets.h>
 #include <boost/config.hpp>
@@ -9,6 +10,7 @@
 
 int g_colors;
 
+class vcp_neighborhood;
 class vcp_neighborhood2;
 
 class vcp: public mets::feasible_solution {
@@ -24,7 +26,7 @@ public:
   
   vcp(int nodes, const std::vector< std::pair<int, int> >& edges) 
     : cost_m(0), g_m(edges.begin(), edges.end(), nodes), 
-      color_m(nodes) 
+      color_m(nodes), conflicts_m(nodes)
   { update_cost(); }
 
   mets::gol_type cost_function() const
@@ -34,14 +36,17 @@ public:
   }
 
   size_t size() { return boost::num_vertices(g_m); }
-
   void copy_from(const mets::feasible_solution& other)
   {
     const vcp& o = static_cast<const vcp&>(other);
     cost_m = o.cost_m;
     g_m = o.g_m;
     color_m = o.color_m;
+    conflicts_m = o.conflicts_m;
   }
+
+  int conflicts(int i) const
+  { return conflicts_m[i]; }
 
   int color(int i) const 
   { return color_m[i]; }
@@ -57,10 +62,14 @@ public:
 	{
 	  if(oldc == color_m[boost::target(*ei,g_m)])
 	    {
+	      --conflicts_m[boost::source(*ei,g_m)];
+	      --conflicts_m[boost::target(*ei,g_m)];
 	      --cost_m;
 	    }
 	  else if(c == color_m[boost::target(*ei,g_m)])
 	    {
+	      ++conflicts_m[boost::source(*ei,g_m)];
+	      ++conflicts_m[boost::target(*ei,g_m)];
 	      ++cost_m;
 	    }
 	}
@@ -71,10 +80,14 @@ public:
 	{
 	  if(oldc == color_m[boost::source(*ei,g_m)])
 	    {
+	      --conflicts_m[boost::source(*ei,g_m)];
+	      --conflicts_m[boost::target(*ei,g_m)];
 	      --cost_m;
 	    }
 	  else if(c == color_m[boost::source(*ei,g_m)])
 	    {
+	      ++conflicts_m[boost::source(*ei,g_m)];
+	      ++conflicts_m[boost::target(*ei,g_m)];
 	      ++cost_m;
 	    }
 	}
@@ -119,8 +132,40 @@ public:
   {
     for(int ii(0); ii!=boost::num_vertices(g_m); ++ii)
       {
-	os << color_m[ii] << "\n";
+	os << color_m[ii] << " ";
       }
+  }
+
+  void print_dot(int ki, std::ostream& os)
+  {
+    os << "graph VCP { " << std::endl;
+    for(int ii(0); ii!=boost::num_vertices(g_m); ++ii)
+      {
+	os << "  n" << ii << " [label=\"" 
+	   << ii << "\",style=\"filled\",fillcolor=\"";
+	os.fill('0');
+	os << std::hex;
+	os << "#" << std::setw(6) 
+	   << (uint32_t)(((1+color_m[ii])*65087*131) % 0xffffff) << " ";
+	os << std::dec;
+	os.fill(' ');
+	os << "\"];" << std::endl;
+      }
+    edge_iterator ei, ee;
+    for(boost::tie(ei, ee) = boost::edges(g_m); ei!=ee; ++ei)
+      {
+	os << "  n" 
+	   << boost::source(*ei, g_m) << " -- n" 
+	   << boost::target(*ei, g_m) << " ";
+
+	if(color_m[boost::source(*ei,g_m)] == 
+	   color_m[boost::target(*ei,g_m)])
+	  {
+	    os << "[style=\"bold\"]";
+	  }
+	os << ";" << std::endl;
+      }
+    os << "}" << std::endl;
   }
 
   void print_edges(std::ostream& os)
@@ -158,6 +203,7 @@ protected:
   mutable int cost_m;
   graph_type g_m;
   std::vector<int> color_m;
+  mutable std::vector<int> conflicts_m;
 
   friend class vcp_neighborhood;
 
@@ -170,7 +216,9 @@ protected:
 	if(color_m[boost::source(*ei,g_m)] == 
 	   color_m[boost::target(*ei,g_m)])
 	  {
-	    cost_m++;
+	    ++conflicts_m[boost::source(*ei,g_m)];
+	    ++conflicts_m[boost::target(*ei,g_m)];
+	    ++cost_m;
 	  }
       }
   }
@@ -223,28 +271,25 @@ public:
 class vcp_neighborhood : public mets::move_manager
 {
 public:
-  vcp_neighborhood(int n, int ki) : nodes_m(n), ki_m(ki) 
-  {
-    for(int i(0); i!=nodes_m; ++i)
-      for(int c(0); c!=ki_m-1; ++c)
-	moves_m.push_back(new vcp_set(i, 0));
-  }
+  vcp_neighborhood(int ki) : ki_m(ki) 
+  { }
   
   void refresh(mets::feasible_solution& other)
   { 
+    for(iterator mi = moves_m.begin(); mi != moves_m.end(); ++mi)
+      {
+	delete *mi;
+      }
+    moves_m.clear();
+
     vcp& v = static_cast<vcp&>(other);
-    iterator mi = moves_m.begin();
-    for(int i(0); i!=nodes_m; ++i)
+    for(int i(0); i!=v.size(); ++i)
       for(int c(0); c!=ki_m; ++c)
 	{
-	  vcp_set& m = static_cast<vcp_set&>(**mi);
-	  if(c == v.color(i)) ++c;
-	  if(c == ki_m) break;
-	  m.set(m.node(), c);
-	  ++mi;
+	  if(v.conflicts(i) && v.color(i) != c)
+	    moves_m.push_back(new vcp_set(i, c));
 	}
   }
-  int nodes_m;
   int ki_m;
 };
 
@@ -315,7 +360,8 @@ struct logger : public mets::search_listener
     if(as->step() == mets::abstract_search::MOVE_MADE)
       {
 	iteration++;
-	os << v.cost_function() << "\t";
+	v.print(os);
+	os << v.cost_function() << '\n';
 	if(iteration % 20 == 0) os << std::flush;
       }
   }
@@ -331,16 +377,20 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-  if(argc != 4) 
+  bool fast = false;
+
+  if(argc == 4)
+    fast = true;
+  else if(argc != 3) 
     {
-      clog << "vcp file.col colors tenure" << endl;
+      clog << "vcp file.col colors" << endl;
       exit(1);
     }
+
   std::ifstream in(argv[1]);
   int num_colors = ::atoi(argv[2]);
-  int tenure = ::atoi(argv[3]);
   vector< pair<int, int> > edges;
-  int n, m;
+  int n = 0, m = 0;
   while(in.good())
     {
       char h;
@@ -380,23 +430,26 @@ int main(int argc, char* argv[])
   assert(m);
   assert( m == edges.size() );
 
+  boost::mt19937 gen(time(NULL));
+
+  g_colors = num_colors;
+
   vcp point(n, edges);
+  point.randomize(g_colors, gen);
+
   // storage for the best known solution.
   vcp incumbent(point);
   
-  boost::mt19937 gen(time(NULL));
-
   boost::uniform_int<> tl_dist(1, n);
   boost::variate_generator<boost::mt19937&, boost::uniform_int<> >
     tlg(gen, tl_dist);
 
-  g_colors = num_colors;
+  vcp_neighborhood neigh(g_colors);
 
-  vcp_neighborhood neigh(n, g_colors);
+  ofstream flog((string(argv[1]) + ".log").c_str());
+  logger log(flog);
 
-  logger log(cout);
-
-  for(int run=0; run!=10; ++run)
+  if(!fast) for(int run=0; run!=10; ++run)
     {
       point.randomize(g_colors, gen);
       vcp major_best(point);
@@ -407,16 +460,19 @@ int main(int argc, char* argv[])
       // simple aspiration criteria
       mets::best_ever_criteria aspiration_criteria;
       
+      mets::threshold_termination_criteria 
+	threshold(0);
+      
+      // combine threshold with a max noimprove criterion
       mets::noimprove_termination_criteria 
-	minor_it_criteria(20);
+	minor_it_criteria(&threshold, 20);
 
       while(!minor_it_criteria(major_best)) {
 
 	vcp minor_best(point);	
 
-	mets::noimprove_termination_criteria noimprove(500);
-	mets::threshold_termination_criteria 
-	  threshold_noimprove(&noimprove, 0);
+	// combine threshold with a max noimprove criterion
+	mets::noimprove_termination_criteria noimprove(&threshold, 5000);
 
 	// random tabu list tenure
 	tabu_list.tenure(tlg());
@@ -431,7 +487,7 @@ int main(int argc, char* argv[])
 				    neigh, 
 				    tabu_list, 
 				    aspiration_criteria, 
-				    threshold_noimprove);
+				    noimprove);
 	algorithm.attach(log);
 	std::clog << "New iteration with tenure: " 
 		  << tabu_list.tenure() << std::endl;
@@ -455,22 +511,26 @@ int main(int argc, char* argv[])
       
     }
 
-  vcp_neighborhood neigh2(n, g_colors);
+  vcp_neighborhood neigh2(g_colors);
   mets::local_search algo2(point, 
        			   incumbent, 
        			   neigh2, 
 			   false);
   
-  algo2.search();
-  
+  algo2.attach(log);
+  if(!fast) algo2.search();
+
+  flog.close();
+
   clog << "Best solution: " << incumbent.cost_function()  << endl;
-  ofstream sol("solution.txt");
+
+  ofstream sol((string(argv[1]) + ".log").c_str());
   incumbent.print(sol);
   sol.close();
 
-  ofstream dbg("debug");
-  incumbent.print_edges(dbg);
-  dbg.close();
+  ofstream dot((string(argv[1]) + ".dot").c_str());
+  incumbent.print_dot(g_colors, dot);
+  dot.close();
 
   incumbent.display_conflicts(clog);
 
