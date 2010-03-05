@@ -16,8 +16,10 @@
 //   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
+
 // Include metslib from the metslib subfolder
 #include <metslib/mets.h>
+
 // Include the tutorial model (and neighborhood) definitions
 #include "tut_model.h"
 #include "tut_moves.h"
@@ -26,6 +28,14 @@
 using namespace std;
 
 /// @brief Generic progress printer.
+///
+/// This is actually an observer of the algorithm that receives
+/// notification on the algorithm advancement. 
+///
+/// Update is called each time the algorithm has something to say us:
+/// a move was made, the aspiration criteria was used, an improvement
+/// was achieved and so on.
+///
 struct logger : public mets::search_listener
 {
   explicit
@@ -62,6 +72,7 @@ int main()
   // to 109 as possible.
   // subsetsum is derived from mets::feasible_solution in tut_model.h 
   subsetsum model(v, 109);
+
   // storage for the best known solution.
   subsetsum best(model);
 
@@ -77,14 +88,13 @@ int main()
   // We are done defining the model in the metslib framework, now we
   // can use the toolkit provided classes to try solve our problem.
 
-
   // simple tabu list (recency on moves)
-  mets::simple_tabu_list tabu_list(5);
+  mets::simple_tabu_list tabu_list(7);
   // simple aspiration criteria
   mets::best_ever_criteria aspiration_criteria;
 
   // stop searching when not improving for 100 times
-  mets::noimprove_termination_criteria noimprove(100);
+  mets::noimprove_termination_criteria noimprove(200);
   // chain the previous termination criteria with a threshold (when we
   // reach 0 we have solved our problem). The resulting
   // threshold_noimprove criterion terminate either when the objective

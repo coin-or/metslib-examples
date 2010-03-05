@@ -24,52 +24,84 @@
 
 /// @brief The tutorial model is a simple model for the subset sum problem
 class subsetsum : public mets::feasible_solution {
+  /// @brief The binary variables 
   std::vector<bool> delta_m;
+  /// @brief The values (parameters) of the problem
   std::vector<int> set_m;
+  /// @brief The target sum
   int sum_m;
+  /// @brief The actual cost
+  int cost_m;
 public:
+  /// @brief Ctor.
   subsetsum(const std::vector<int>& set, int sum) 
     : delta_m(set.size()), 
       set_m(set.begin(), set.end()),
-      sum_m(sum)
+      sum_m(sum),
+      cost_m(sum)
   { }
 
-  /// @brief Pure virtual cost_function to be minimized
+  /// @brief The cost_function that we want minimized
   ///
   /// min set_m' delta_m
   /// s.t. set_m' delta_m <= sum_m
   ///
   mets::gol_type cost_function() const
   {
-    int diff = sum_m - std::inner_product
-      (set_m.begin(), set_m.end(), delta_m.begin(), 0);
-    
-    // allow, but hardly penalizes a constraint violation
-    if(diff < 0)
-      return -100 * diff;
+    // the method allows, but hardly penalizes a constraint violation
+    if(cost_m < 0)
+      return -100 * cost_m;
     else
-      return diff;
+      return cost_m;
   }
 
-   /// @brief This method is needed by the algorithm to record the
-  /// best solution.
+  /// @brief This method is needed by the algorithm to record the best
+  /// solution.
   void copy_from(const mets::feasible_solution& o)
   {
     const subsetsum& s = dynamic_cast<const subsetsum&>(o);
     delta_m = s.delta_m;
     set_m = s.set_m;
+    cost_m = s.cost_m;
   }
 
-  /// @brief Utility methods
+  /// @brief The size of the problem
   size_t size() const
   { return delta_m.size(); }
 
-  /// @brief Read/write operators
+  /// @brief Evaluates the cost of a change without actually doing it.
+  mets::gol_type what_if(int i, bool val) const
+  {
+    int newcost = cost_m;
+    if(delta_m[i] && !val)
+      newcost = cost_m - set_m[i];
+    else if(!delta_m[i] && val)
+      newcost = cost_m + set_m[i];
+    // the method allows, but hardly penalizes a constraint violation
+    if(newcost < 0)
+      return -100 * newcost;
+    else
+      return newcost;
+  }
+  
+  /// @brief Return actual delta[i] value
   bool delta(int i) const { return delta_m[i]; }
-  void delta(int i, bool val) { delta_m[i] = val; }
+
+  /// @brief Set delta[i] to val and update the cost
+  void delta(int i, bool val) 
+  {
+    if(delta_m[i] && !val)
+      cost_m -= set_m[i];
+    else if(!delta_m[i] && val)
+      cost_m += set_m[i];
+    delta_m[i] = val;
+  }
+
   int element(int i) const { return set_m[i]; }
+
 };
 
+/// @brief Print the solution on a stream.
 std::ostream& operator<<(std::ostream& o, const subsetsum& s)
 {
   for(int ii(0); ii!=s.size(); ++ii)

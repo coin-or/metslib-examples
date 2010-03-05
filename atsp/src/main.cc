@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
   // random number generator from C++ TR1 extension
   std::tr1::mt19937 rng(time(NULL));
 
-  // user define problem
+  // user defined problem
   atsp_model problem_instance;
 
   // read problem instance from standard input (no check is made)
