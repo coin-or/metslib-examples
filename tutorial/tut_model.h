@@ -20,49 +20,51 @@
 #include <numeric>
 #include <cassert>
 #include <algorithm>
-#include <metslib/mets.h>
+#include <metslib/mets.hh>
 
 /// @brief The tutorial model is a simple model for the subset sum problem
-class subsetsum : public mets::feasible_solution {
+class subsetsum : public mets::copyable_solution {
   /// @brief The binary variables 
   std::vector<bool> delta_m;
   /// @brief The values (parameters) of the problem
   std::vector<int> set_m;
   /// @brief The target sum
-  int sum_m;
+  int target_sum_m;
   /// @brief The actual cost
-  int cost_m;
+  int current_sum_m;
 public:
   /// @brief Ctor.
   subsetsum(const std::vector<int>& set, int sum) 
-    : delta_m(set.size()), 
+    : delta_m(set.size(), false), 
       set_m(set.begin(), set.end()),
-      sum_m(sum),
-      cost_m(sum)
+      target_sum_m(sum),
+      current_sum_m(0)
   { }
 
   /// @brief The cost_function that we want minimized
   ///
   /// min set_m' delta_m
-  /// s.t. set_m' delta_m <= sum_m
+  /// s.t. set_m' delta_m <= target_sum_m
   ///
   mets::gol_type cost_function() const
   {
     // the method allows, but hardly penalizes a constraint violation
-    if(cost_m < 0)
-      return -100 * cost_m;
+    int diff = target_sum_m - current_sum_m;
+    if(diff < 0)
+      return -100 * diff;
     else
-      return cost_m;
+      return diff;
   }
 
   /// @brief This method is needed by the algorithm to record the best
   /// solution.
-  void copy_from(const mets::feasible_solution& o)
+  void copy_from(const mets::copyable& o)
   {
     const subsetsum& s = dynamic_cast<const subsetsum&>(o);
     delta_m = s.delta_m;
     set_m = s.set_m;
-    cost_m = s.cost_m;
+    target_sum_m = s.target_sum_m;
+    current_sum_m = s.current_sum_m;
   }
 
   /// @brief The size of the problem
@@ -72,16 +74,17 @@ public:
   /// @brief Evaluates the cost of a change without actually doing it.
   mets::gol_type what_if(int i, bool val) const
   {
-    int newcost = cost_m;
+    int newcost = current_sum_m;
     if(delta_m[i] && !val)
-      newcost = cost_m - set_m[i];
+      newcost -= set_m[i];
     else if(!delta_m[i] && val)
-      newcost = cost_m + set_m[i];
+      newcost += set_m[i];
     // the method allows, but hardly penalizes a constraint violation
-    if(newcost < 0)
-      return -100 * newcost;
+    int diff = target_sum_m - newcost;
+    if(diff < 0)
+      return -100 * diff;
     else
-      return newcost;
+      return diff;
   }
   
   /// @brief Return actual delta[i] value
@@ -91,9 +94,9 @@ public:
   void delta(int i, bool val) 
   {
     if(delta_m[i] && !val)
-      cost_m -= set_m[i];
+      current_sum_m -= set_m[i];
     else if(!delta_m[i] && val)
-      cost_m += set_m[i];
+      current_sum_m += set_m[i];
     delta_m[i] = val;
   }
 

@@ -18,7 +18,7 @@
 #include <iostream>
 
 // Include metslib from the metslib subfolder
-#include <metslib/mets.h>
+#include <metslib/mets.hh>
 
 // Include the tutorial model (and neighborhood) definitions
 #include "tut_model.h"
@@ -36,20 +36,20 @@ using namespace std;
 /// a move was made, the aspiration criteria was used, an improvement
 /// was achieved and so on.
 ///
-struct logger : public mets::search_listener
+struct logger : public mets::search_listener<full_neighborhood> 
 {
   explicit
   logger(std::ostream& o) 
-    : mets::search_listener(), iteration(0), os(o) 
+    : mets::search_listener<full_neighborhood> (), iteration(0), os(o) 
   { }
   
   void 
-  update(mets::abstract_search* as) 
+  update(mets::abstract_search<full_neighborhood>  * as) 
   {
-    const mets::feasible_solution& p = as->working();
-    if(as->step() == mets::abstract_search::MOVE_MADE)
+    const subsetsum& ss = static_cast<const subsetsum&>(as->working());
+    if(as->step() == mets::abstract_search<full_neighborhood>::MOVE_MADE)
       {
-        os << iteration++ << " " << p.cost_function() << "\n";
+        os  << iteration++ << ": " << ss.cost_function() << "/" << ss << "\n";
       }
   }
   
@@ -102,21 +102,22 @@ int main()
   mets::threshold_termination_criteria 
     threshold_noimprove(&noimprove, 0);
 
+  mets::best_ever_solution best_recorder(best);
   // Create a tabu_search algorithm instance starting from "model",
   // recording the best solution in "best", exploring the neighborhood
   // using "neigh", using the tabu list "tabu_list", the best ever
   // aspiration criteria "aspiration_criteria" and the combined
   // termination criteria "threshold_noimprove".
-  mets::tabu_search algorithm(model, 
-			      best, 
-			      neigh, 
-			      tabu_list, 
-			      aspiration_criteria, 
-			      threshold_noimprove);
+  mets::tabu_search<full_neighborhood> algorithm(model, 
+						 best_recorder, 
+						 neigh, 
+						 tabu_list, 
+						 aspiration_criteria, 
+						 threshold_noimprove);
   algorithm.attach(g);
   algorithm.search();
-  cout << "Best solution: " << best.cost_function()  << endl;
-  cout << best << endl;
+  cout << "Best solution: " << best_recorder.best_ever().cost_function()  << endl;
+  cout << (const subsetsum&)best_recorder.best_ever() << endl;
 
   return 0;
 }

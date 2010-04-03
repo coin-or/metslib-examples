@@ -19,14 +19,20 @@
 #include <iostream>
 #include "tut_moves.h"
 
-class full_neighborhood : public mets::move_manager {
+class full_neighborhood  
+{
 public:
+  std::vector<toggle*> moves_m;
+  typedef std::vector<toggle*>::iterator iterator;
+  iterator begin() { return moves_m.begin(); }
+  iterator end() { return moves_m.end(); }
+  
   full_neighborhood(int problem_size) 
-    : mets::move_manager() 
   {
     for(unsigned int ii = 0; ii != problem_size; ++ii) 
       moves_m.push_back(new toggle(ii));
   }
+  
   ~full_neighborhood()
   {
     // delete all moves
