@@ -3,7 +3,7 @@
 #include <fstream>
 #include <vector>
 
-#include <metslib/mets.h>
+#include <metslib/mets.hh>
 
 #include "qap_model.hpp"
 
@@ -15,22 +15,25 @@ void usage()
   ::exit(1);
 }
 
-struct logger : public mets::search_listener
+typedef mets::swap_neighborhood<std::tr1::mt19937> neighborhood_t;
+
+struct logger : public mets::search_listener<neighborhood_t>
 {
   explicit
   logger(std::ostream& o) 
-    : mets::search_listener(), 
+    : mets::search_listener<neighborhood_t>(), 
       iteration(0), 
       os(o) 
   { }
   
   void 
-  update(mets::abstract_search* as) 
+  update(mets::abstract_search<neighborhood_t>* as) 
   {
     const mets::feasible_solution& p = as->working();
-    if(as->step() == mets::abstract_search::MOVE_MADE)
+    if(as->step() == mets::abstract_search<neighborhood_t>::MOVE_MADE)
       {
-	os << iteration++ << " " << p.cost_function() << "\n";
+	os << iteration++ << " " 
+	   << static_cast<const mets::evaluable_solution&>(p).cost_function() << "\n";
       }
   }
   
@@ -61,77 +64,80 @@ int main(int argc, char* argv[])
   std::tr1::uniform_int<int> tlg(7, N*7);
 
   // best solution instance for recording
-  qap_model incumbent(problem_instance);
+  // storage for the best known solution.
+  qap_model incumbent_solution(problem_instance);
+  mets::best_ever_solution incumbent_recorder(incumbent_solution);
 
-  // A library provided neighborhood make of random swaps and double
-  // swaps.
-  mets::swap_neighborhood<std::tr1::mt19937> 
-    neighborhood(rng, N*12, N*6);
+  // A neighborhood made of random swaps
+  neighborhood_t
+    neighborhood(rng, N*12);
 
   // log to standard error
   logger g(clog);
 
-  for(unsigned int starts = 0; starts != N/5; ++starts) {
-    // generate a random starting point
-    problem_instance.random_shuffle(rng);
+  for(unsigned int starts = 0; starts != N/5; ++starts) 
+    {
+      // generate a random starting point
+      mets::random_shuffle(problem_instance, rng);
 
-    // record the best solution of each major iteration
-    qap_model major_best_solution(problem_instance);
+      // best solution instance for recording storage for the best
+      // known solution of the major iteration.
+      qap_model majorit_solution(problem_instance);
+      mets::best_ever_solution majorit_recorder(majorit_solution);
 
-    // use framework provided strategies
-    mets::simple_tabu_list tabu_list(tlg(rng));
-    mets::best_ever_criteria aspiration_criteria;
-    
-    // Do minor iterations with a max no-improve criterion
-    mets::noimprove_termination_criteria 
-      minor_it_criteria(20);
-
-    while(!minor_it_criteria(major_best_solution)) {
+      // use framework provided strategies
+      mets::simple_tabu_list tabu_list(tlg(rng));
+      mets::best_ever_criteria aspiration_criteria;
       
-      // record best solution of minor iteration
-      qap_model minor_best_solution(problem_instance);
-
-      // random tabu list tenure
-      tabu_list.tenure(tlg(rng));
-
-      // fixed number of non improving moves before termination
+      // Do minor iterations with a max no-improve criterion
       mets::noimprove_termination_criteria 
-	termination_criteria(750);
+	minor_it_criteria(20);
       
-      // the search algorithm
-      mets::tabu_search algorithm(problem_instance, 
-				  minor_best_solution, 
-				  neighborhood, 
-				  tabu_list, 
-				  aspiration_criteria, 
-				  termination_criteria);
-      
-      algorithm.attach(g);
-      std::cout << "New iteration with tenure: " 
-		<< tabu_list.tenure() << std::endl;
-      algorithm.search();
-      
-      if(minor_best_solution.cost_function() 
-	 < major_best_solution.cost_function())
-	major_best_solution = minor_best_solution;
-      
-      if(major_best_solution.cost_function() 
-	 < incumbent.cost_function())
-	incumbent = major_best_solution;
+      while(!minor_it_criteria(majorit_recorder.best_seen())) 
+	{
+	  
+	  // best solution instance for recording storage for the best
+	  // known solution of the major iteration.
+	  qap_model minorit_solution(problem_instance);
+	  mets::best_ever_solution minorit_recorder(minorit_solution);
+	  
+	  // random tabu list tenure
+	  tabu_list.tenure(tlg(rng));
+	  
+	  // fixed number of non improving moves before termination
+	  mets::noimprove_termination_criteria 
+	    termination_criteria(750);
+	  
+	  // the search algorithm
+	  mets::tabu_search<neighborhood_t> algorithm(problem_instance, 
+						      minorit_recorder, 
+						      neighborhood, 
+						      tabu_list, 
+						      aspiration_criteria, 
+						      termination_criteria);
+	  
+	  algorithm.attach(g);
+	  std::cout << "New iteration with tenure: " 
+		    << tabu_list.tenure() << std::endl;
 
-      problem_instance = major_best_solution;
-      // perturbate point with N/5 random swaps
-      problem_instance.perturbate(N/4, rng);
+	  algorithm.search();
+	  
+	  majorit_recorder.accept(minorit_recorder.best_seen());
+	  problem_instance.copy_from(majorit_recorder.best_seen());
+
+	  // perturbate point with random swaps
+	  mets::perturbate(problem_instance, N/4, rng);
+	}
+      
+      incumbent_recorder.accept(majorit_recorder.best_seen());
+      
+      cout << "Best of this run/so far: " 
+	   << majorit_solution.cost_function()  
+	   << "/"
+	   << incumbent_solution.cost_function() << endl;
+      
     }
-    
-    cout << "Best of this run/so far: " 
-	 << major_best_solution.cost_function()  
-	 << "/"
-	 << incumbent.cost_function() << endl;
-
-  }
   // write solution to standard output
-  cout << incumbent.size() << " " 
-       << incumbent.cost_function()  << endl;
-  cout << incumbent << endl;
+  cout << N << " " <<  incumbent_solution.cost_function() << endl
+       << incumbent_solution << endl;
 }

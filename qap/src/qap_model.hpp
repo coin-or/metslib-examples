@@ -1,46 +1,27 @@
 #pragma once
 
 #include <cassert>
-#include <valarray>
+#include <vector>
 #include <algorithm>
-#if defined (WIN32)
-#  include <random>
-#else
-#  include <tr1/random>
-#endif
-#include <metslib/mets.h>
+#include <metslib/mets.hh>
 
 class qap_model : public mets::permutation_problem
 {
 protected:
-  std::valarray< std::valarray<int> > a;
-  std::valarray< std::valarray<int> > b;
-  int64_t c_m;
+  std::vector< std::vector<int> > a_m;
+  std::vector< std::vector<int> > b_m;
   
 public:
-  qap_model() : permutation_problem(0), a(), b(), c_m(0) {};
+  qap_model() : permutation_problem(0), a_m(), b_m() {};
   
-  /// @brief Returns the objective function value. This value is
-  /// updated every time the variable is modified.
-  mets::gol_type cost_function() const 
-  {
-    return (mets::gol_type)c_m;
-  }
-  
-  void copy_from(const mets::feasible_solution& sol)
+  void copy_from(const mets::copyable& sol)
   {
     const qap_model* o = dynamic_cast<const qap_model*>(&sol);
     if(o)
       {
-	mets::permutation_problem::copy_from(sol);
-	unsigned int n = o->pi_m.size();
-	a.resize(n);
-	b.resize(n);
-	for(unsigned int ii = 0; ii != n; ++ii)
-	  { a[ii].resize(n); b[ii].resize(n); }
-	a = o->a;
-	b = o->b;
-	c_m = o->c_m;
+	permutation_problem::copy_from(sol);
+	a_m = o->a_m;
+	b_m = o->b_m;
       }
     else
       {
@@ -48,43 +29,30 @@ public:
       }
   }
 
-  void random_shuffle(std::tr1::mt19937& rng)
-  {
-    mets::random_shuffle(*this, rng);
-    c_m = cost_calculator();
-  }
-
-  void perturbate(int n, std::tr1::mt19937& rng)
-  {
-    mets::perturbate(*this, n, rng);
-  }
-
   /// @brief: swap move that does delta updates of the objective.
   ///
   /// This is much faster as it runs in O(n) instead of O(n^2) (it
   /// takes 8n multiplications instead of n^2 to compute the objective
   /// function after a swap).
-  void
-  swap(int i, int j)
+  mets::gol_type
+  evaluate_swap(int i, int j) const
   {
-    for(unsigned int ii=0; ii != a.size(); ++ii)
+    assert(i!=j);
+    double delta = 0.0;
+    for(unsigned int ii=0; ii != a_m.size(); ++ii)
       {
-	c_m -= a[i][ii] * b[pi_m[i]][pi_m[ii]];
-	c_m -= a[ii][i] * b[pi_m[ii]][pi_m[i]];
-	c_m -= a[j][ii] * b[pi_m[j]][pi_m[ii]];
-	c_m -= a[ii][j] * b[pi_m[ii]][pi_m[j]];
+	delta -= a_m[i][ii] * b_m[pi_m[i]][pi_m[ii]];
+	delta -= a_m[ii][i] * b_m[pi_m[ii]][pi_m[i]];
+	delta -= a_m[j][ii] * b_m[pi_m[j]][pi_m[ii]];
+	delta -= a_m[ii][j] * b_m[pi_m[ii]][pi_m[j]];
+	int ni = ii;
+	if(ii==i) ni = j; else if(ii==j) ni = i;
+	delta += a_m[i][ii] * b_m[pi_m[j]][pi_m[ni]];
+	delta += a_m[ii][i] * b_m[pi_m[ni]][pi_m[j]];
+	delta += a_m[j][ii] * b_m[pi_m[i]][pi_m[ni]];
+	delta += a_m[ii][j] * b_m[pi_m[ni]][pi_m[i]];
       }
-    mets::permutation_problem::swap(i, j);
-    for(unsigned int ii=0; ii != a.size(); ++ii)
-      {
-	c_m += a[i][ii] * b[pi_m[i]][pi_m[ii]];
-	c_m += a[ii][i] * b[pi_m[ii]][pi_m[i]];
-	c_m += a[j][ii] * b[pi_m[j]][pi_m[ii]];
-	c_m += a[ii][j] * b[pi_m[ii]][pi_m[j]];
-     }
-    
-    // c_m = cost_calculator();    
-    assert(c_m == cost_calculator());
+    return delta;
   }
 
   friend std::ostream& operator<<(std::ostream& os, const qap_model& p);
@@ -92,13 +60,13 @@ public:
   
 protected:
   
-  // Straight cost calculator
-  int64_t cost_calculator() const
+  // Full cost calculation
+  mets::gol_type compute_cost() const
   {
-    int64_t sum = 0;
+    double sum = 0.0;
     for(unsigned int ii = 0; ii != pi_m.size(); ++ii)
       for(unsigned int jj = 0; jj != pi_m.size(); ++jj)
-	sum += (a[ii][jj]) * b[pi_m[ii]][pi_m[jj]];
+	sum += (a_m[ii][jj]) * b_m[pi_m[ii]][pi_m[jj]];
     return sum;
   }
 
@@ -119,22 +87,22 @@ operator>>(std::istream& is, qap_model& qap)
   unsigned int n;
   is >> n;
   qap.pi_m.resize(n);
-  qap.a.resize(n);
-  qap.b.resize(n);
+  qap.a_m.resize(n);
+  qap.b_m.resize(n);
   for(unsigned int ii = 0; ii != n; ++ii)
-    { qap.pi_m[ii] = ii; qap.a[ii].resize(n); qap.b[ii].resize(n); }
+    { qap.pi_m[ii] = ii; qap.a_m[ii].resize(n); qap.b_m[ii].resize(n); }
 
   for(unsigned int ii = 0; ii != n; ++ii)
     for(unsigned int jj = 0; jj != n; ++jj)
       {
-	is >> qap.a[ii][jj];
+	is >> qap.a_m[ii][jj];
       }
 
   for(unsigned int ii = 0; ii != n; ++ii)
     for(unsigned int jj = 0; jj != n; ++jj)
       {
-	is >> qap.b[ii][jj];
+	is >> qap.b_m[ii][jj];
       }
-  qap.c_m = qap.cost_calculator();
+  qap.update_cost();
   return is;
 }
