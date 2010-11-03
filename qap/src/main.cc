@@ -62,6 +62,7 @@ int main(int argc, char* argv[])
   unsigned int N = problem_instance.size();
 
   std::tr1::uniform_int<int> tlg(7, N*7);
+  std::tr1::uniform_int<int> psg(7, N/2);
 
   // best solution instance for recording
   // storage for the best known solution.
@@ -75,7 +76,7 @@ int main(int argc, char* argv[])
   // log to standard error
   logger g(clog);
 
-  for(unsigned int starts = 0; starts != N/5; ++starts) 
+  for(unsigned int starts = 0; starts != int(sqrt(N)); ++starts) 
     {
       // generate a random starting point
       mets::random_shuffle(problem_instance, rng);
@@ -91,8 +92,10 @@ int main(int argc, char* argv[])
       
       // Do minor iterations with a max no-improve criterion
       mets::noimprove_termination_criteria 
-	minor_it_criteria(20);
+	minor_it_criteria(100);
       
+      int perturbation_size = N;
+
       while(!minor_it_criteria(majorit_recorder.best_seen())) 
 	{
 	  
@@ -106,7 +109,7 @@ int main(int argc, char* argv[])
 	  
 	  // fixed number of non improving moves before termination
 	  mets::noimprove_termination_criteria 
-	    termination_criteria(750);
+	    termination_criteria(200);
 	  
 	  // the search algorithm
 	  mets::tabu_search<neighborhood_t> algorithm(problem_instance, 
@@ -125,8 +128,10 @@ int main(int argc, char* argv[])
 	  majorit_recorder.accept(minorit_recorder.best_seen());
 	  problem_instance.copy_from(majorit_recorder.best_seen());
 
+
+	  perturbation_size = psg(rng);
 	  // perturbate point with random swaps
-	  mets::perturbate(problem_instance, N/4, rng);
+	  mets::perturbate(problem_instance, perturbation_size, rng);
 	}
       
       incumbent_recorder.accept(majorit_recorder.best_seen());

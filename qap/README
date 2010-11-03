@@ -20,8 +20,11 @@ Hacking the code
 
 src/
 
-  main.cc - the qap permutation problem is loaded and solved with tabu
-            search
+  main.cc - the qap permutation problem is loaded and solved with
+            Iterated Tabu Search
+
+  main_ts.cc - the qap permutation problem is loaded and solved with a
+             simple Tabu Search
 
   qap_model.hpp - a class representing solutions to the problem (with
                   a cost function)

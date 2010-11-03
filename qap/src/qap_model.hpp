@@ -16,17 +16,10 @@ public:
   
   void copy_from(const mets::copyable& sol)
   {
-    const qap_model* o = dynamic_cast<const qap_model*>(&sol);
-    if(o)
-      {
-	permutation_problem::copy_from(sol);
-	a_m = o->a_m;
-	b_m = o->b_m;
-      }
-    else
-      {
-	std::cerr << "Should not happen." << std::endl;
-      }
+    const qap_model& o = dynamic_cast<const qap_model&>(sol);
+    permutation_problem::copy_from(sol);
+    a_m = o.a_m;
+    b_m = o.b_m;
   }
 
   /// @brief: swap move that does delta updates of the objective.
