@@ -1,0 +1,9 @@
+An ITS for the Vertex Coloring Problem (VCP). Instances can be found
+from DIMACS.
+
+Loosely based on the TS by MMT 2008.
+
+Performs quite well ;)
+
+Happy coding!
+Mirko
