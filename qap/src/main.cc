@@ -9,16 +9,21 @@
 
 using namespace std;
 
+/// a typedef for the neighbourhood we will use
+typedef mets::swap_neighborhood<std::tr1::mt19937> neighborhood_t;
+
+// print usage message and exit program
 void usage()
 {
   cerr << "qap qaplib.dat" << endl;
   ::exit(1);
 }
 
-typedef mets::swap_neighborhood<std::tr1::mt19937> neighborhood_t;
-
+// an observer of the search algorithm that is notified on search
+// events and will print progress information
 struct logger : public mets::search_listener<neighborhood_t>
 {
+  // the ctor accepts the stream to log into
   explicit
   logger(std::ostream& o) 
     : mets::search_listener<neighborhood_t>(), 
@@ -26,14 +31,19 @@ struct logger : public mets::search_listener<neighborhood_t>
       os(o) 
   { }
   
+  // the update method is called by the framework after a move or an
+  // improvement or on other events
   void 
   update(mets::abstract_search<neighborhood_t>* as) 
   {
     const mets::feasible_solution& p = as->working();
+    // if the update was called after a move
     if(as->step() == mets::abstract_search<neighborhood_t>::MOVE_MADE)
       {
+	// increment the iteration number and print the current cost
 	os << iteration++ << " " 
-	   << static_cast<const mets::evaluable_solution&>(p).cost_function() << "\n";
+	   << dynamic_cast<const mets::evaluable_solution&>(p).cost_function() 
+	   << "\n";
       }
   }
   
@@ -42,7 +52,12 @@ protected:
   ostream& os;
 };
 
-
+// the main function implementing the ITS algorithm 
+//
+// the algorithm does multistart, at each start the solution is
+// iteratively improved using a TS strategy and perturbated by random
+// swaps (using an Iterated Local Search strategy).
+//  
 int main(int argc, char* argv[]) 
 {
 
@@ -61,8 +76,10 @@ int main(int argc, char* argv[])
 
   unsigned int N = problem_instance.size();
 
-  std::tr1::uniform_int<int> tlg(7, N*7);
-  std::tr1::uniform_int<int> psg(7, N/2);
+  assert(N>10);
+
+  std::tr1::uniform_int<int> tlg(5, N*7);
+  std::tr1::uniform_int<int> psg(5, N/2);
 
   // best solution instance for recording
   // storage for the best known solution.
@@ -71,7 +88,7 @@ int main(int argc, char* argv[])
 
   // A neighborhood made of random swaps
   neighborhood_t
-    neighborhood(rng, N*12);
+    neighborhood(rng, N*sqrt(N));
 
   // log to standard error
   logger g(clog);
@@ -92,9 +109,9 @@ int main(int argc, char* argv[])
       
       // Do minor iterations with a max no-improve criterion
       mets::noimprove_termination_criteria 
-	minor_it_criteria(100);
+	minor_it_criteria(N*6);
       
-      int perturbation_size = N;
+      int perturbation_size = N/2;
 
       while(!minor_it_criteria(majorit_recorder.best_seen())) 
 	{
@@ -109,25 +126,23 @@ int main(int argc, char* argv[])
 	  
 	  // fixed number of non improving moves before termination
 	  mets::noimprove_termination_criteria 
-	    termination_criteria(200);
+	    termination_criteria(perturbation_size*sqrt(N));
 	  
 	  // the search algorithm
 	  mets::tabu_search<neighborhood_t> algorithm(problem_instance, 
-						      minorit_recorder, 
-						      neighborhood, 
-						      tabu_list, 
-						      aspiration_criteria, 
-						      termination_criteria);
+	   					      minorit_recorder, 
+	   					      neighborhood, 
+	   					      tabu_list, 
+	   					      aspiration_criteria, 
+	   					      termination_criteria);
 	  
 	  algorithm.attach(g);
 	  std::cout << "New iteration with tenure: " 
 		    << tabu_list.tenure() << std::endl;
 
-	  algorithm.search();
-	  
+	  algorithm.search();	
 	  majorit_recorder.accept(minorit_recorder.best_seen());
 	  problem_instance.copy_from(majorit_recorder.best_seen());
-
 
 	  perturbation_size = psg(rng);
 	  // perturbate point with random swaps

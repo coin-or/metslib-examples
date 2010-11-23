@@ -8,18 +8,18 @@
 class qap_model : public mets::permutation_problem
 {
 protected:
-  std::vector< std::vector<int> > a_m;
-  std::vector< std::vector<int> > b_m;
+  std::vector< std::vector<int> > f_m;
+  std::vector< std::vector<int> > d_m;
   
 public:
-  qap_model() : permutation_problem(0), a_m(), b_m() {};
+  qap_model() : permutation_problem(0), f_m(), d_m() {};
   
   void copy_from(const mets::copyable& sol)
   {
     const qap_model& o = dynamic_cast<const qap_model&>(sol);
     permutation_problem::copy_from(sol);
-    a_m = o.a_m;
-    b_m = o.b_m;
+    f_m = o.f_m;
+    d_m = o.d_m;
   }
 
   /// @brief: swap move that does delta updates of the objective.
@@ -32,18 +32,18 @@ public:
   {
     assert(i!=j);
     double delta = 0.0;
-    for(unsigned int ii=0; ii != a_m.size(); ++ii)
+    for(unsigned int ii=0; ii != f_m.size(); ++ii)
       {
-	delta -= a_m[i][ii] * b_m[pi_m[i]][pi_m[ii]];
-	delta -= a_m[ii][i] * b_m[pi_m[ii]][pi_m[i]];
-	delta -= a_m[j][ii] * b_m[pi_m[j]][pi_m[ii]];
-	delta -= a_m[ii][j] * b_m[pi_m[ii]][pi_m[j]];
+	delta -= f_m[i][ii] * d_m[pi_m[i]][pi_m[ii]];
+	delta -= f_m[ii][i] * d_m[pi_m[ii]][pi_m[i]];
+	delta -= f_m[j][ii] * d_m[pi_m[j]][pi_m[ii]];
+	delta -= f_m[ii][j] * d_m[pi_m[ii]][pi_m[j]];
 	int ni = ii;
 	if(ii==i) ni = j; else if(ii==j) ni = i;
-	delta += a_m[i][ii] * b_m[pi_m[j]][pi_m[ni]];
-	delta += a_m[ii][i] * b_m[pi_m[ni]][pi_m[j]];
-	delta += a_m[j][ii] * b_m[pi_m[i]][pi_m[ni]];
-	delta += a_m[ii][j] * b_m[pi_m[ni]][pi_m[i]];
+	delta += f_m[i][ii] * d_m[pi_m[j]][pi_m[ni]];
+	delta += f_m[ii][i] * d_m[pi_m[ni]][pi_m[j]];
+	delta += f_m[j][ii] * d_m[pi_m[i]][pi_m[ni]];
+	delta += f_m[ii][j] * d_m[pi_m[ni]][pi_m[i]];
       }
     return delta;
   }
@@ -59,7 +59,7 @@ protected:
     double sum = 0.0;
     for(unsigned int ii = 0; ii != pi_m.size(); ++ii)
       for(unsigned int jj = 0; jj != pi_m.size(); ++jj)
-	sum += (a_m[ii][jj]) * b_m[pi_m[ii]][pi_m[jj]];
+	sum += f_m[ii][jj] * d_m[pi_m[ii]][pi_m[jj]];
     return sum;
   }
 
@@ -80,21 +80,23 @@ operator>>(std::istream& is, qap_model& qap)
   unsigned int n;
   is >> n;
   qap.pi_m.resize(n);
-  qap.a_m.resize(n);
-  qap.b_m.resize(n);
+  qap.f_m.resize(n);
+  qap.d_m.resize(n);
   for(unsigned int ii = 0; ii != n; ++ii)
-    { qap.pi_m[ii] = ii; qap.a_m[ii].resize(n); qap.b_m[ii].resize(n); }
+    { qap.pi_m[ii] = ii; qap.f_m[ii].resize(n); qap.d_m[ii].resize(n); }
 
   for(unsigned int ii = 0; ii != n; ++ii)
     for(unsigned int jj = 0; jj != n; ++jj)
       {
-	is >> qap.a_m[ii][jj];
+	is >> qap.f_m[ii][jj];
+	if(ii==jj) assert(qap.f_m[ii][jj] == 0);
       }
-
+  
   for(unsigned int ii = 0; ii != n; ++ii)
     for(unsigned int jj = 0; jj != n; ++jj)
       {
-	is >> qap.b_m[ii][jj];
+	is >> qap.d_m[ii][jj];
+	if(ii==jj) assert(qap.d_m[ii][jj] == 0);
       }
   qap.update_cost();
   return is;
