@@ -38,7 +38,7 @@ public:
   ///
   mets::gol_type evaluate(const mets::feasible_solution& cs) const
   {
-    const subsetsum& model = static_cast<const subsetsum&>(cs);
+    const subsetsum& model = dynamic_cast<const subsetsum&>(cs);
     return model.what_if(index_m, !model.delta(index_m));
   }
 
@@ -46,7 +46,7 @@ public:
   ///
   void apply(mets::feasible_solution& s) const
   {
-    subsetsum& model = static_cast<subsetsum&>(s);
+    subsetsum& model = dynamic_cast<subsetsum&>(s);
     model.delta(index_m, !model.delta(index_m));
   }
 

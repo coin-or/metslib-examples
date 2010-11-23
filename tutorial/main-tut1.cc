@@ -46,7 +46,7 @@ struct logger : public mets::search_listener<full_neighborhood>
   void 
   update(mets::abstract_search<full_neighborhood>  * as) 
   {
-    const subsetsum& ss = static_cast<const subsetsum&>(as->working());
+    const subsetsum& ss = dynamic_cast<const subsetsum&>(as->working());
     if(as->step() == mets::abstract_search<full_neighborhood>::MOVE_MADE)
       {
         os  << iteration++ << ": " << ss.cost_function() << "/" << ss << "\n";
@@ -116,8 +116,8 @@ int main()
 						 threshold_noimprove);
   algorithm.attach(g);
   algorithm.search();
-  cout << "Best solution: " << best_recorder.best_ever().cost_function()  << endl;
-  cout << (const subsetsum&)best_recorder.best_ever() << endl;
+  cout << "Best solution: " << best_recorder.best_seen().cost_function()  << endl;
+  cout << (const subsetsum&)best_recorder.best_seen() << endl;
 
   return 0;
 }

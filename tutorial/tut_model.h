@@ -23,7 +23,7 @@
 #include <metslib/mets.hh>
 
 /// @brief The tutorial model is a simple model for the subset sum problem
-class subsetsum : public mets::copyable_solution {
+class subsetsum : public mets::evaluable_solution {
   /// @brief The binary variables 
   std::vector<bool> delta_m;
   /// @brief The values (parameters) of the problem
