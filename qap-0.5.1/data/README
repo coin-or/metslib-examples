@@ -1,0 +1,16 @@
+This problems are a sample taken from the QAPLIB
+http://www.seas.upenn.edu/qaplib/ or the http://qaplib.uwaterloo.ca/
+mirror. This local copy is here only for testing purposes, for full 
+details about this data refer to the original sites.
+
+You can execute qap from the main qap folder this way:
+
+./src/qap data/chr12a.dat
+
+and compare the result with the corresponding sln file.
+
+- Mirko
+
+
+
+

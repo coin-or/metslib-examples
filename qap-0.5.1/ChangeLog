@@ -1,0 +1,3 @@
+2009-09-16 Mirko Maischberger <mirko.maischberger@gmail.com>
+	* stc/main.cc, src/qap_model.hpp: reimplemented using
+	the new mets::permutation_problem.
