@@ -20,21 +20,23 @@ Hacking the code
 
 src/
 
-  main.cc - the qap permutation problem is loaded and solved with
-            Iterated Tabu Search
+  main_ls.cc - the qap permutation problem is loaded and solved with
+               Local Search
 
-  main_ts.cc - the qap permutation problem is loaded and solved with a
-             simple Tabu Search
+  main_rrls.cc - the qap permutation problem is loaded and solved with
+                 Random Restart Local Search
+
+  main_ts.cc - the qap permutation problem is loaded and solved with
+               Tabu Search
+
+  main_sa.cc - the qap permutation problem is loaded and solved with
+               Simulated Annealing
+
+  main_its.cc - the qap permutation problem is loaded and solved with
+                Iterated Tabu Search
 
   qap_model.hpp - a class representing solutions to the problem (with
                   a cost function)
-
-  qap_move.hpp - a simple swap move
-
-  qap_neighborhood.hpp - a generator of a stochastic subset of the
-                         neighborhood with n swap moves and m dual
-                         swap moves (using mets::complex_mana_move to
-                         compose two qap_move together)
 
 
 Happy hacking
