@@ -2,7 +2,7 @@ dnl --------------------------------
 dnl Initialization macros.
 dnl --------------------------------
 
-AC_INIT(qap, 0.5.0, mirko.maischberger@gmail.com)
+AC_INIT(qap, 0.5.2, mirko.maischberger@gmail.com)
 dnl AM_CONFIG_HEADER(src/config.h)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([config])
@@ -11,7 +11,7 @@ dnl -----------------------------------------------
 dnl Package name and version number (user defined)
 dnl -----------------------------------------------
 
-AM_INIT_AUTOMAKE(qap, 0.5.0, mirko.maischberger@gmail.com)
+AM_INIT_AUTOMAKE(qap, 0.5.2, mirko.maischberger@gmail.com)
 
 dnl -----------------------------------------------
 dnl Checks for programs.
@@ -28,7 +28,7 @@ dnl -----------------------------------------------
 
 AC_LANG_CPLUSPLUS
 
-PKG_CHECK_MODULES(metslib, metslib >= 0.5.0)
+PKG_CHECK_MODULES(metslib, metslib >= 0.5.2)
 AC_SUBST(metslib_CFLAGS)
 AC_SUBST(metslib_LIBS)
 

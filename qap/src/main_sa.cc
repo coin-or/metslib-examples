@@ -47,15 +47,17 @@ int main(int argc, char* argv[])
   mets::best_ever_criteria aspiration_criteria;
       
   // fixed number of non improving moves before termination
-  mets::noimprove_termination_criteria termination_criteria(1000);
+  mets::forever never_stop;
+  mets::exponential_cooling cooler(0.999);
 	  
   // the search algorithm
-  mets::tabu_search<swap_neighborhood_t> algorithm(problem_instance, 
-						   incumbent_recorder, 
-						   neighborhood, 
-						   tabu_list, 
-						   aspiration_criteria, 
-						   termination_criteria);
+  mets::simulated_annealing<swap_neighborhood_t> algorithm(problem_instance, 
+							   incumbent_recorder, 
+							   neighborhood, 
+							   never_stop,
+							   cooler,
+							   7500,
+							   100);
   
   // log to standard error
   mets::iteration_logger<swap_neighborhood_t> g(clog);

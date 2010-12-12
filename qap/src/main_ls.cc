@@ -15,7 +15,7 @@ void usage()
   ::exit(1);
 }
 
-typedef mets::swap_neighborhood<std::tr1::mt19937> swap_neighborhood_t;
+typedef mets::swap_full_neighborhood swap_neighborhood_t;
 
 int main(int argc, char* argv[]) 
 {
@@ -37,25 +37,15 @@ int main(int argc, char* argv[])
   mets::best_ever_solution incumbent_recorder(incumbent_solution);
 
   // A neighborhood made of 2N random swaps
-  swap_neighborhood_t neighborhood(rng, sqrt(N)*N);
+  swap_neighborhood_t neighborhood(N);
 
   // generate a random starting point
   mets::random_shuffle(problem_instance, rng);
 
-  // use framework provided strategies
-  mets::simple_tabu_list tabu_list(N*sqrt(N));
-  mets::best_ever_criteria aspiration_criteria;
-      
-  // fixed number of non improving moves before termination
-  mets::noimprove_termination_criteria termination_criteria(1000);
-	  
   // the search algorithm
-  mets::tabu_search<swap_neighborhood_t> algorithm(problem_instance, 
-						   incumbent_recorder, 
-						   neighborhood, 
-						   tabu_list, 
-						   aspiration_criteria, 
-						   termination_criteria);
+  mets::local_search<swap_neighborhood_t> algorithm(problem_instance, 
+						    incumbent_recorder, 
+						    neighborhood);
   
   // log to standard error
   mets::iteration_logger<swap_neighborhood_t> g(clog);
