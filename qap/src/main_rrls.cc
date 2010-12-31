@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
   swap_neighborhood_t neighborhood(N);
 
   mets::iteration_termination_criteria rrls_stop(200);
-  mets::iteration_logger<swap_neighborhood_t> g1(cout);
+  mets::iteration_logger<swap_neighborhood_t> g1(clog);
   mets::improvement_logger<swap_neighborhood_t> g2(clog);
   while(!rrls_stop(best_recorder.best_seen())) {
     // generate a random starting point

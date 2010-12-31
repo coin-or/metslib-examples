@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 
   assert(N>10);
 
-  std::tr1::uniform_int<int> tlg(5, N*sqrt(N)/2);
+  std::tr1::uniform_int<int> tlg(5, N*sqrt(N));
   std::tr1::uniform_int<int> psg(N/5, N/2);
 
   // best solution instance for recording
@@ -65,9 +65,12 @@ int main(int argc, char* argv[])
 
   // Do minor iterations with a max no-improve criterion
   mets::noimprove_termination_criteria 
-    ils_stop(200);
+    ils_stop(30);
   
   int perturbation_size = N/2;
+
+  // use framework provided strategies
+  mets::simple_tabu_list tabu_list(tlg(rng));
 
   while(!ils_stop(ils_recorder.best_seen())) 
     {
@@ -77,8 +80,6 @@ int main(int argc, char* argv[])
       qap_model ts_solution(problem_instance);
       mets::best_ever_solution ts_recorder(ts_solution);
 
-      // use framework provided strategies
-      mets::simple_tabu_list tabu_list(tlg(rng));
       mets::best_ever_criteria aspiration_criteria;
       
       // random tabu list tenure
@@ -86,7 +87,7 @@ int main(int argc, char* argv[])
 	  
       // fixed number of non improving moves before termination
       mets::noimprove_termination_criteria 
-	ts_stop(750);
+	ts_stop(250);
       
       // the search algorithm
       mets::tabu_search<neighborhood_t> algorithm(problem_instance, 
